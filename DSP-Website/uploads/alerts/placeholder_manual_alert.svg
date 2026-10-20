@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="100%" height="100%">
+  <rect width="640" height="360" fill="#0d101d" />
+  <!-- Room Mockup -->
+  <rect x="100" y="140" width="440" height="170" fill="#141a2e" rx="4" />
+  <line x1="30" y1="310" x2="610" y2="310" stroke="#25314e" stroke-width="2" />
+
+  <!-- Manual Panic Button Graphic -->
+  <rect x="270" y="110" width="100" height="130" fill="#1e2844" rx="8" stroke="#3b82f6" stroke-width="2" />
+  <circle cx="320" cy="165" r="30" fill="#3b82f6" opacity="0.9" />
+  <circle cx="320" cy="165" r="22" fill="#2563eb" />
+  <text x="320" y="171" fill="#ffffff" font-family="'Inter', sans-serif" font-size="16" font-weight="900" text-anchor="middle">SOS</text>
+
+  <!-- Status Bar Overlay (Top) -->
+  <rect x="16" y="16" width="608" height="34" fill="rgba(10, 14, 23, 0.85)" rx="6" stroke="#223049" />
+  <circle cx="32" cy="33" r="5" fill="#3b82f6" />
+  <text x="44" y="37" fill="#38bdf8" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="700">NODE DISPATCH | MANUAL HARDWARE BUTTON TRIGGERED</text>
+  <text x="500" y="37" fill="#94a3b8" font-family="'JetBrains Mono', monospace" font-size="11">PANEL ID: #3BTN-NODE</text>
+
+  <!-- Banner (Bottom) -->
+  <rect x="16" y="308" width="608" height="36" fill="rgba(59, 130, 246, 0.9)" rx="6" />
+  <text x="320" y="331" fill="#ffffff" font-family="'Inter', sans-serif" font-size="13" font-weight="800" text-anchor="middle" letter-spacing="0.5">MANUAL EMERGENCY ALERT: PHYSICAL PUSH BUTTON ACTIVATED</text>
+</svg>

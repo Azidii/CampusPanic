@@ -1,0 +1,103 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+
+    <main class="page-body">
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Console Settings</h1>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">Configure operational audio sirens, visual theme preferences, and privacy thresholds</p>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Visual & Display Settings -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Display &amp; Appearance</h2>
+          </div>
+          <div class="settings-group">
+            <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <div class="setting-info">
+                <div class="setting-title">Visual Console Theme</div>
+                <div class="setting-desc">Toggle between high-contrast Security Dark mode and Clean Light mode</div>
+              </div>
+
+              <div class="theme-picker-group" style="width: 100%;">
+                <div class="theme-card" data-theme-val="dark">
+                  <div class="theme-preview-box preview-dark"></div>
+                  <div class="theme-name">Security Dark (Recommended)</div>
+                </div>
+                <div class="theme-card" data-theme-val="light">
+                  <div class="theme-preview-box preview-light"></div>
+                  <div class="theme-name">Clean Light</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Siren & Notifications -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Audio &amp; Alarm Dispatch</h2>
+          </div>
+          <div class="settings-group">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-title">Verified Threat Audio Siren</div>
+                <div class="setting-desc">Play acoustic two-tone siren when computer vision verifies an emergency</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="soundToggleInput" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+
+            <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
+              <div style="display: flex; justify-content: space-between; width: 100%;">
+                <div class="setting-title">Alarm Siren Volume</div>
+                <span id="volumeValText" style="font-family: var(--font-mono); font-weight: 700; color: #38bdf8;">80%</span>
+              </div>
+              <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8" style="width: 100%; accent-color: #2563eb;">
+            </div>
+
+            <div style="margin-top: 10px;">
+              <button id="testAlarmSoundBtn" class="btn btn-warning" style="width: 100%;">
+                Test Emergency Alarm Siren
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy & Compliance -->
+        <div class="card" style="grid-column: 1 / -1;">
+          <div class="card-header">
+            <h2 class="card-title">Data Privacy &amp; Retention Compliance</h2>
+          </div>
+          <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6;">
+            <p style="margin-bottom: 10px;">
+              In compliance with the <strong>Data Privacy Act</strong>, CampusPanic does not conduct continuous video surveillance storage. Only incident-triggered camera frames are persisted to disk upon verified alert events.
+            </p>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px;">
+              <div style="background-color: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Image Retention Threshold</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);">24 Hours (Configurable)</div>
+              </div>
+              <div style="background-color: var(--bg-surface); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Automated Purge Frequency</div>
+                <div style="font-size: 1.1rem; font-weight: 700; color: var(--status-online);">Hourly Sweep Active</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <%- include('partials/footer') %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

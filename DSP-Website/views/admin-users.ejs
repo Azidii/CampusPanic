@@ -1,0 +1,206 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+
+    <main class="page-body">
+      <div class="admin-header-bar">
+        <div>
+          <h1 style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">User &amp; Operator Administration</h1>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Manage campus security operator accounts, assign buildings, and control roles</p>
+        </div>
+
+        <div>
+          <button id="openAddUserModalBtn" class="btn btn-primary">
+            + Add New User
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="admin-filter-bar">
+        <div class="search-input-wrap">
+          <input type="text" id="userSearchInput" class="form-input" placeholder="Search users by name or email...">
+        </div>
+
+        <div>
+          <select id="userRoleFilter" class="form-select">
+            <option value="all">All Roles</option>
+            <option value="admin">Administrator</option>
+            <option value="user">Security Guard</option>
+          </select>
+        </div>
+
+        <div>
+          <select id="userStatusFilter" class="form-select">
+            <option value="all">All Status</option>
+            <option value="active">Active Accounts</option>
+            <option value="inactive">Disabled Accounts</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="user-table-wrap">
+        <table class="user-data-table">
+          <thead>
+            <tr>
+              <th>User Name</th>
+              <th>Email Address</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Assigned Sector</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (users && users.length > 0) { %>
+              <% users.forEach(function(u) { %>
+                <tr class="user-row" id="user-row-<%= u._id %>" data-role="<%= u.role %>" data-status="<%= u.isActive ? 'active' : 'inactive' %>">
+                  <td>
+                    <div class="user-cell-flex">
+                      <div class="user-cell-avatar">
+                        <%= u.name.charAt(0).toUpperCase() %>
+                      </div>
+                      <strong><%= u.name %></strong>
+                    </div>
+                  </td>
+                  <td style="font-family: var(--font-mono); font-size: 0.85rem;"><%= u.email %></td>
+                  <td>
+                    <span class="badge <%= u.role === 'admin' ? 'badge-verified-threat' : 'badge-medical' %>">
+                      <%= u.role === 'admin' ? 'Administrator' : 'Guard' %>
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge <%= u.isActive ? 'badge-status-resolved' : 'badge-status-new' %>">
+                      <%= u.isActive ? 'ACTIVE' : 'DISABLED' %>
+                    </span>
+                  </td>
+                  <td><%= u.assignedBuilding || 'All Buildings' %></td>
+                  <td>
+                    <div class="actions-cell">
+                      <button class="btn btn-sm btn-outline open-edit-user-btn" data-id="<%= u._id %>" data-name="<%= u.name %>" data-email="<%= u.email %>" data-role="<%= u.role %>" data-building="<%= u.assignedBuilding %>" data-active="<%= u.isActive %>">
+                        Edit
+                      </button>
+
+                      <% if (user._id.toString() !== u._id.toString()) { %>
+                        <button class="btn btn-sm btn-danger delete-user-btn" data-id="<%= u._id %>" data-name="<%= u.name %>">
+                          Delete
+                        </button>
+                      <% } else { %>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Current</span>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add User Modal -->
+      <div id="addUserModal" class="modal-backdrop">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">Create Security Operator Account</h2>
+            <button class="modal-close-btn modal-close-trigger">&times;</button>
+          </div>
+          <form id="addUserForm">
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="addName" class="form-label">Full Name</label>
+                <input type="text" id="addName" class="form-input" placeholder="e.g. Guard Juan Dela Cruz" required>
+              </div>
+
+              <div class="form-group">
+                <label for="addEmail" class="form-label">Email Address</label>
+                <input type="email" id="addEmail" class="form-input" placeholder="guard@campuspanic.edu" required>
+              </div>
+
+              <div class="form-group">
+                <label for="addPassword" class="form-label">Initial Password (Min. 6 chars)</label>
+                <input type="password" id="addPassword" class="form-input" required minlength="6">
+              </div>
+
+              <div class="form-group">
+                <label for="addRole" class="form-label">Security Role</label>
+                <select id="addRole" class="form-select">
+                  <option value="user">Security Guard (Standard Operator)</option>
+                  <option value="admin">System Administrator (Full Privileges)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="addBuilding" class="form-label">Assigned Sector / Building</label>
+                <input type="text" id="addBuilding" class="form-input" placeholder="e.g. Science Complex">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline modal-close-trigger">Cancel</button>
+              <button type="submit" class="btn btn-primary">Create User Account</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Edit User Modal -->
+      <div id="editUserModal" class="modal-backdrop">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title">Edit Security Operator</h2>
+            <button class="modal-close-btn modal-close-trigger">&times;</button>
+          </div>
+          <form id="editUserForm">
+            <input type="hidden" id="editUserId">
+            <div class="modal-body">
+              <div class="form-group">
+                <label for="editName" class="form-label">Full Name</label>
+                <input type="text" id="editName" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label for="editEmail" class="form-label">Email Address</label>
+                <input type="email" id="editEmail" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label for="editRole" class="form-label">Role</label>
+                <select id="editRole" class="form-select">
+                  <option value="user">Security Guard</option>
+                  <option value="admin">Administrator</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="editBuilding" class="form-label">Assigned Building</label>
+                <input type="text" id="editBuilding" class="form-input">
+              </div>
+
+              <div class="form-group">
+                <label for="editPassword" class="form-label">Reset Password (leave empty to keep current)</label>
+                <input type="password" id="editPassword" class="form-input" placeholder="New password (optional)" minlength="6">
+              </div>
+
+              <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="editActive" style="width: 18px; height: 18px;">
+                <label for="editActive" class="form-label" style="margin-bottom: 0;">Account Active &amp; Allowed Login</label>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline modal-close-trigger">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <%- include('partials/footer') %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

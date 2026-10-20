@@ -1,0 +1,40 @@
+/* =========================================================
+   404 Not Found View Styles - 404.css
+   Security Console Resource Not Found Warning
+   ========================================================= */
+
+.notfound-container {
+  min-height: calc(100vh - var(--header-height) - 60px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.notfound-code {
+  font-size: 6rem;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  line-height: 1;
+  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 12px;
+  letter-spacing: -0.05em;
+}
+
+.notfound-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.notfound-message {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin-bottom: 24px;
+}

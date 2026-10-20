@@ -1,0 +1,33 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <% if (user) { %>
+    <%- include('partials/sidebar') %>
+  <% } %>
+
+  <div class="main-content" style="<%= !user ? 'margin-left: 0;' : '' %>">
+    <% if (user) { %>
+      <%- include('partials/navbar') %>
+    <% } %>
+
+    <main class="page-body">
+      <div class="notfound-container">
+        <div class="notfound-code">404</div>
+        <h1 class="notfound-title">Restricted / Non-Existent Area</h1>
+        <p class="notfound-message">
+          <%= typeof message !== 'undefined' && message ? message : 'The operations console endpoint or camera telemetry channel requested does not exist or has been relocated.' %>
+        </p>
+
+        <a href="/" class="btn btn-primary" style="padding: 10px 24px;">
+          &larr; Return to Operations Dashboard
+        </a>
+      </div>
+    </main>
+
+    <% if (user) { %>
+      <%- include('partials/footer') %>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

@@ -1,0 +1,112 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+
+    <main class="page-body">
+      <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Operator Profile</h1>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">Manage account credentials and assigned campus security sectors</p>
+      </div>
+
+      <div class="profile-grid">
+        <!-- Operator Summary Card -->
+        <div>
+          <div class="card">
+            <div class="profile-card-header-summary">
+              <div class="profile-avatar-large">
+                <%= user.name ? user.name.charAt(0).toUpperCase() : 'O' %>
+              </div>
+              <div class="profile-user-name"><%= user.name %></div>
+              <div class="profile-user-email"><%= user.email %></div>
+              <div>
+                <span class="badge <%= user.role === 'admin' ? 'badge-verified-threat' : 'badge-medical' %>">
+                  <%= user.role === 'admin' ? 'System Administrator' : 'Security Guard' %>
+                </span>
+              </div>
+            </div>
+
+            <div class="profile-meta-list">
+              <div class="profile-meta-row">
+                <span class="meta-label">Account Status:</span>
+                <span class="meta-value" style="color: var(--status-online);">Active</span>
+              </div>
+              <div class="profile-meta-row">
+                <span class="meta-label">Assigned Sector:</span>
+                <span class="meta-value"><%= user.assignedBuilding || 'All Buildings' %></span>
+              </div>
+              <div class="profile-meta-row">
+                <span class="meta-label">Registered:</span>
+                <span class="meta-value"><%= new Date(user.createdAt || Date.now()).toLocaleDateString() %></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Updates -->
+        <div class="profile-sections-wrapper">
+          <!-- Profile Details Form -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Operator Information</h2>
+            </div>
+            <form id="profileDetailsForm">
+              <div class="form-group">
+                <label for="profileName" class="form-label">Full Name</label>
+                <input type="text" id="profileName" class="form-input" value="<%= user.name %>" required>
+              </div>
+
+              <div class="form-group">
+                <label for="profileEmail" class="form-label">Email Address (Read-only)</label>
+                <input type="email" id="profileEmail" class="form-input" value="<%= user.email %>" disabled style="opacity: 0.7;">
+              </div>
+
+              <div class="form-group">
+                <label for="profileBuilding" class="form-label">Assigned Building / Post</label>
+                <input type="text" id="profileBuilding" class="form-input" value="<%= user.assignedBuilding || '' %>" placeholder="e.g. Science Complex, Main Security Post">
+              </div>
+
+              <button type="submit" class="btn btn-primary">
+                Save Profile Changes
+              </button>
+            </form>
+          </div>
+
+          <!-- Change Password Form -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Change Security Password</h2>
+            </div>
+            <form id="changePasswordForm">
+              <div class="form-group">
+                <label for="currentPassword" class="form-label">Current Password</label>
+                <input type="password" id="currentPassword" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label for="newPassword" class="form-label">New Password (Min. 6 characters)</label>
+                <input type="password" id="newPassword" class="form-input" required minlength="6">
+              </div>
+
+              <div class="form-group">
+                <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                <input type="password" id="confirmPassword" class="form-input" required minlength="6">
+              </div>
+
+              <button type="submit" class="btn btn-warning">
+                Update Security Credentials
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <%- include('partials/footer') %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

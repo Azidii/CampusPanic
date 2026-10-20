@@ -1,0 +1,55 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+
+    <main class="page-body">
+      <div class="map-header-bar">
+        <div>
+          <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Campus Nodes &amp; Sensor Map</h1>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Interactive geospatial telemetry tracking all ESP32 acoustic trigger nodes and cameras</p>
+        </div>
+
+        <div>
+          <a href="/active-nodes-map" class="btn btn-danger">
+            View Active Threats Map &rarr;
+          </a>
+        </div>
+      </div>
+
+      <div class="map-container-wrapper">
+        <div class="map-floating-overlay">
+          <div class="map-legend-title">Node Status Legend</div>
+          <div class="legend-items">
+            <div class="legend-chip">
+              <div class="legend-dot online"></div>
+              <span>Online (<%= nodes.filter(n => n.status === 'online').length %>)</span>
+            </div>
+            <div class="legend-chip">
+              <div class="legend-dot active"></div>
+              <span>Active Threat (<%= nodes.filter(n => n.status === 'active').length %>)</span>
+            </div>
+            <div class="legend-chip">
+              <div class="legend-dot offline"></div>
+              <span>Offline (<%= nodes.filter(n => n.status === 'offline').length %>)</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="campusMap"></div>
+      </div>
+
+      <!-- Injected JSON Payload for Leaflet Script -->
+      <script id="nodesData" type="application/json">
+        <%- JSON.stringify(nodes) %>
+      </script>
+    </main>
+
+    <%- include('partials/footer') %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

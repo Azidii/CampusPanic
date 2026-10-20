@@ -1,0 +1,194 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+
+    <main class="page-body">
+      <!-- 1. Stats Overview Grid -->
+      <section class="stats-grid">
+        <div class="stat-card stat-gunshot">
+          <div class="stat-icon-wrap">&bull;</div>
+          <div class="stat-info">
+            <div class="stat-value" id="count-gunshot"><%= counts.gunshot || 0 %></div>
+            <div class="stat-label">Gunshot Alerts</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-medical">
+          <div class="stat-icon-wrap">+</div>
+          <div class="stat-info">
+            <div class="stat-value" id="count-medical"><%= counts.medical || 0 %></div>
+            <div class="stat-label">Medical Emergencies</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-fire">
+          <div class="stat-icon-wrap">&Delta;</div>
+          <div class="stat-info">
+            <div class="stat-value" id="count-fire"><%= counts.fire || 0 %></div>
+            <div class="stat-label">Fire Alarms</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-panic">
+          <div class="stat-icon-wrap">!</div>
+          <div class="stat-info">
+            <div class="stat-value" id="count-panic"><%= counts.panic || 0 %></div>
+            <div class="stat-label">Manual Panics</div>
+          </div>
+        </div>
+
+        <div class="stat-card stat-active-nodes">
+          <div class="stat-icon-wrap">&check;</div>
+          <div class="stat-info">
+            <div class="stat-value" id="count-active-nodes"><%= activeNodesCount || 0 %> / <%= totalNodes || 0 %></div>
+            <div class="stat-label">Active Nodes</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Latest Verified Threat Alert Banner (Highlighted) -->
+      <% 
+        const latestVerified = alerts.find(a => a.threatStatus === 'verified_threat' && a.status !== 'resolved');
+        if (latestVerified) { 
+      %>
+        <div class="latest-threat-banner">
+          <div class="threat-banner-left">
+            <div class="threat-alert-icon">!</div>
+            <div>
+              <div class="threat-headline">CRITICAL THREAT: <%= latestVerified.emergencyType.toUpperCase() %> VERIFIED IN <%= latestVerified.room %></div>
+              <div class="threat-subtext">
+                <%= latestVerified.building %> &bull; Node <%= latestVerified.nodeId %> &bull; Firearm Vision: <%= Math.round((latestVerified.firearmConfidence || 0.9) * 100) %>% &bull; TinyML Audio: <%= Math.round((latestVerified.audioConfidence || 0.9) * 100) %>%
+              </div>
+            </div>
+          </div>
+          <div>
+            <a href="/cam-view?nodeId=<%= latestVerified.nodeId %>&alertId=<%= latestVerified._id %>" class="btn btn-danger">
+              Open Verification Cam &rarr;
+            </a>
+          </div>
+        </div>
+      <% } %>
+
+      <!-- 3. Toolbar & Filters -->
+      <section class="dashboard-toolbar">
+        <div class="filter-group">
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-right: 4px;">Type:</span>
+          <button class="filter-chip filter-type-btn active" data-type="all">All</button>
+          <button class="filter-chip filter-type-btn" data-type="gunshot">Gunshot</button>
+          <button class="filter-chip filter-type-btn" data-type="medical">Medical</button>
+          <button class="filter-chip filter-type-btn" data-type="fire">Fire</button>
+          <button class="filter-chip filter-type-btn" data-type="panic">Panic</button>
+        </div>
+
+        <div class="filter-group">
+          <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-right: 4px;">Status:</span>
+          <button class="filter-chip filter-status-btn active" data-status="all">All Status</button>
+          <button class="filter-chip filter-status-btn" data-status="new">New</button>
+          <button class="filter-chip filter-status-btn" data-status="acknowledged">Acknowledged</button>
+          <button class="filter-chip filter-status-btn" data-status="resolved">Resolved</button>
+        </div>
+
+        <div style="min-width: 220px;">
+          <input type="text" id="alertSearchInput" class="form-input" style="padding: 6px 12px; font-size: 0.85rem;" placeholder="Search room, building, node...">
+        </div>
+      </section>
+
+      <!-- 4. Alert Feed List -->
+      <section class="alert-feed-list" id="alertFeedList">
+        <% if (alerts && alerts.length > 0) { %>
+          <% alerts.forEach(function(a) { 
+               let threatBadgeClass = 'badge-medical';
+               if (a.threatStatus === 'verified_threat') threatBadgeClass = 'badge-verified-threat';
+               else if (a.threatStatus === 'unverified_audio_trigger') threatBadgeClass = 'badge-unverified-audio';
+          %>
+            <div class="alert-card priority-<%= a.priority %>" id="alert-card-<%= a._id %>" data-type="<%= a.emergencyType %>" data-status="<%= a.status %>">
+              <div class="alert-card-header">
+                <div class="alert-badges">
+                  <span class="badge <%= threatBadgeClass %>"><%= a.threatStatus.replace(/_/g, ' ') %></span>
+                  <span class="badge badge-<%= a.emergencyType %>"><%= a.emergencyType %></span>
+                  <div class="status-badge-wrap">
+                    <% if (a.status === 'new') { %>
+                      <span class="badge badge-status-new">NEW INCIDENT</span>
+                    <% } else if (a.status === 'acknowledged') { %>
+                      <span class="badge badge-status-ack">ACKNOWLEDGED BY <%= a.acknowledgedBy || 'OPERATOR' %></span>
+                    <% } else { %>
+                      <span class="badge badge-status-resolved">RESOLVED</span>
+                    <% } %>
+                  </div>
+                </div>
+                <div class="alert-time">
+                  <%= new Date(a.timestamp).toLocaleTimeString() %> (Seq #<%= a.sequenceNumber %>)
+                </div>
+              </div>
+
+              <div class="alert-card-body">
+                <div class="alert-location">
+                  <div>
+                    <div class="location-room"><%= a.room %></div>
+                    <div class="location-building"><%= a.building %></div>
+                  </div>
+                  <span class="location-node"><%= a.nodeId %></span>
+                </div>
+
+                <div class="alert-telemetry">
+                  <% if (a.audioConfidence !== null && a.audioConfidence !== undefined) { %>
+                    <div class="telemetry-item">
+                      <span>Audio TinyML:</span>
+                      <span class="telemetry-val"><%= Math.round(a.audioConfidence * 100) %>%</span>
+                    </div>
+                  <% } %>
+
+                  <% if (a.firearmConfidence !== null && a.firearmConfidence !== undefined) { %>
+                    <div class="telemetry-item">
+                      <span>Firearm Vision:</span>
+                      <span class="telemetry-val" style="color: <%= a.firearmConfidence > 0.5 ? 'var(--threat-verified)' : '#f97316' %>;">
+                        <%= Math.round(a.firearmConfidence * 100) %>%
+                      </span>
+                    </div>
+                  <% } %>
+                </div>
+              </div>
+
+              <div class="alert-card-actions">
+                <a href="/cam-view?nodeId=<%= a.nodeId %>&alertId=<%= a._id %>" class="btn btn-sm btn-outline">
+                  Inspect Camera Feed &rarr;
+                </a>
+
+                <div class="alert-action-btns">
+                  <% if (a.status === 'new') { %>
+                    <button class="btn btn-sm btn-warning alert-action-trigger" data-alert-id="<%= a._id %>" data-action="acknowledge">
+                      Acknowledge
+                    </button>
+                    <button class="btn btn-sm btn-success alert-action-trigger" data-alert-id="<%= a._id %>" data-action="resolve">
+                      Resolve
+                    </button>
+                  <% } else if (a.status === 'acknowledged') { %>
+                    <button class="btn btn-sm btn-success alert-action-trigger" data-alert-id="<%= a._id %>" data-action="resolve">
+                      Mark Resolved
+                    </button>
+                  <% } else { %>
+                    <span style="font-size: 0.8rem; color: var(--status-online); font-weight: 600;">Incident Closed</span>
+                  <% } %>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        <% } %>
+
+        <div id="alertEmptyState" class="alert-empty-state" style="display: <%= alerts && alerts.length > 0 ? 'none' : 'block' %>;">
+          <div style="font-size: 1.8rem; margin-bottom: 8px;">&check;</div>
+          <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary); margin-bottom: 4px;">No Alerts Matching Filter</div>
+          <div>All campus nodes telemetry within normal operational thresholds.</div>
+        </div>
+      </section>
+    </main>
+
+    <%- include('partials/footer') %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

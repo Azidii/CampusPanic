@@ -1,0 +1,60 @@
+<%- include('partials/head') %>
+
+<div class="login-page-container">
+  <div class="login-bg-radar"></div>
+
+  <div class="login-card">
+    <div class="login-header">
+      <div class="brand-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <h1 class="login-title">CampusPanic</h1>
+      <p class="login-subtitle">Security Operations Center &amp; Incident Gateway</p>
+    </div>
+
+    <div id="loginErrorBox" class="login-alert-error" style="display: <%= error ? 'flex' : 'none' %>;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      <span id="loginErrorMsg"><%= error || '' %></span>
+    </div>
+
+    <form id="loginForm" autocomplete="off">
+      <div class="form-group">
+        <label for="email" class="form-label">Operator Email</label>
+        <input type="email" id="email" class="form-input" placeholder="operator@campuspanic.edu" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="password" class="form-label">Security Credentials</label>
+        <input type="password" id="password" class="form-input" placeholder="••••••••••••" required>
+      </div>
+
+      <button type="submit" id="loginSubmitBtn" class="btn btn-primary login-submit-btn">
+        Sign In to Operations Console
+      </button>
+    </form>
+
+    <div class="demo-accounts-box">
+      <div class="demo-title">Quick Demo Login</div>
+      <div class="demo-btn-group">
+        <button type="button" id="demoAdminBtn" class="demo-chip-btn">
+          <strong>Chief Admin</strong>
+          <span>admin@campuspanic.edu</span>
+        </button>
+        <button type="button" id="demoGuardBtn" class="demo-chip-btn">
+          <strong>Security Guard</strong>
+          <span>guard@campuspanic.edu</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

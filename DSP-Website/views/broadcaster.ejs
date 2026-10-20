@@ -1,0 +1,93 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+
+    <main class="page-body">
+      <div style="margin-bottom: 20px;">
+        <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Camera Gateway Broadcaster</h1>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">Turn any laptop or mobile webcam into an active security room camera gateway</p>
+      </div>
+
+      <div class="broadcaster-layout">
+        <!-- Video Stream Preview -->
+        <div>
+          <div class="broadcaster-preview-box">
+            <div class="stream-live-pill">
+              <div class="pulse-dot-green"></div>
+              <span>GATEWAY TRANSMITTER</span>
+            </div>
+
+            <video id="localVideo" autoplay playsinline muted></video>
+
+            <div id="streamIdleMsg" class="stream-idle-message">
+              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+              </svg>
+              <div style="font-size: 0.95rem; font-weight: 600;">Camera is currently inactive</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Click "Start Camera Stream" below to link your device camera.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Broadcaster Controls Card -->
+        <div>
+          <div class="card stream-controls-card">
+            <div class="card-header">
+              <h2 class="card-title">Stream Configuration</h2>
+            </div>
+
+            <div class="form-group">
+              <label for="broadcastCameraSelect" class="form-label">Binding Camera Source:</label>
+              <select id="broadcastCameraSelect" class="form-select">
+                <% cameras.forEach(function(c) { %>
+                  <option value="<%= c.cameraId %>"><%= c.label %> (<%= c.cameraId %>)</option>
+                <% }); %>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="broadcastFpsSelect" class="form-label">Transmission Rate:</label>
+              <select id="broadcastFpsSelect" class="form-select">
+                <option value="1">1 Frame / Second (Low Bandwidth)</option>
+                <option value="2" selected>2 Frames / Second (Standard Telemetry)</option>
+                <option value="5">5 Frames / Second (High Responsiveness)</option>
+              </select>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+              <button id="startBroadcastBtn" class="btn btn-primary" style="width: 100%; padding: 12px;">
+                Start Camera Stream
+              </button>
+              <button id="stopBroadcastBtn" class="btn btn-danger" style="width: 100%; padding: 12px; display: none;">
+                Stop Camera Stream
+              </button>
+              <button id="manualSnapshotBtn" class="btn btn-outline" style="width: 100%;" disabled>
+                Transmit Single Snapshot
+              </button>
+            </div>
+
+            <div class="transmission-stats-grid">
+              <div class="t-stat-box">
+                <div class="t-stat-num" id="framesSentCount">0</div>
+                <div class="t-stat-label">Frames Sent</div>
+              </div>
+              <div class="t-stat-box">
+                <div class="t-stat-num" style="color: var(--status-online);">Active</div>
+                <div class="t-stat-label">Relay Protocol</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <%- include('partials/footer') %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

@@ -1,0 +1,84 @@
+<%- include('partials/head') %>
+
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+
+    <main class="page-body">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+        <div>
+          <h1 style="font-size: 1.4rem; font-weight: 800; color: #ef4444; margin-bottom: 4px;">Active Emergency Threats Map</h1>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Filtered geospatial radar highlighting activated campus emergency nodes with pulsing threat animations</p>
+        </div>
+
+        <div>
+          <a href="/map" class="btn btn-outline">
+            &larr; Return to All Nodes Map
+          </a>
+        </div>
+      </div>
+
+      <div class="threat-map-layout">
+        <!-- Main Map -->
+        <div class="threat-map-wrapper">
+          <div id="activeThreatMap"></div>
+        </div>
+
+        <!-- Sidebar Threat List -->
+        <div class="threat-sidebar-list">
+          <div class="card" style="padding: 14px; background: rgba(239, 68, 68, 0.06); border-color: rgba(239, 68, 68, 0.3);">
+            <div style="font-size: 0.82rem; font-weight: 800; color: #f87171; text-transform: uppercase; margin-bottom: 4px;">
+              Active Incident Hotspots: <%= activeNodes.length %>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted);">
+              Color-coded by emergency type with automated verification telemetry.
+            </div>
+          </div>
+
+          <% if (activeAlerts && activeAlerts.length > 0) { %>
+            <% activeAlerts.forEach(function(alert) { %>
+              <div class="threat-hotspot-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span class="badge badge-<%= alert.emergencyType %>"><%= alert.emergencyType %></span>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">
+                    <%= new Date(alert.timestamp).toLocaleTimeString() %>
+                  </span>
+                </div>
+                <div style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);"><%= alert.room %></div>
+                <div style="font-size: 0.8rem; color: var(--text-secondary);"><%= alert.building %> (<%= alert.nodeId %>)</div>
+
+                <% if (alert.imageUrl) { %>
+                  <img class="threat-snapshot-thumb" src="<%= alert.imageUrl %>" alt="Alert snapshot">
+                <% } %>
+
+                <div style="margin-top: 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.75rem; font-family: var(--font-mono); color: <%= alert.threatStatus === 'verified_threat' ? '#f87171' : '#fb923c' %>;">
+                    <%= alert.threatStatus.replace(/_/g, ' ') %>
+                  </span>
+                  <a href="/cam-view?nodeId=<%= alert.nodeId %>&alertId=<%= alert._id %>" class="btn btn-sm btn-danger">
+                    Inspect Feed &rarr;
+                  </a>
+                </div>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div style="text-align: center; padding: 40px 16px; color: var(--text-muted); font-size: 0.88rem;">
+              No active emergency incidents currently reported.
+            </div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Injected Data Payload -->
+      <script id="activeNodesData" type="application/json">
+        <%- JSON.stringify({ activeNodes, activeAlerts }) %>
+      </script>
+    </main>
+
+    <%- include('partials/footer') %>
+  </div>
+</div>
+
+<%- include('partials/scripts') %>

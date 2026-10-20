@@ -1,0 +1,11 @@
+{
+  "name": "campuspanic-root",
+  "version": "1.0.0",
+  "description": "CampusPanic Emergency Alert System",
+  "scripts": {
+    "start": "npm start --prefix DSP-Website",
+    "dev": "npm run dev --prefix DSP-Website",
+    "seed": "npm run seed --prefix DSP-Website",
+    "simulate": "npm run simulate --prefix DSP-Website"
+  }
+}

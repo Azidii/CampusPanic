@@ -1,0 +1,139 @@
+/**
+ * CampusPanic Common Client Script - common.js
+ * Theme Controller, Sound Synthesizer, Toast Notifications & Socket.IO
+ */
+
+// 1. Theme Controller
+(function initTheme() {
+  const savedTheme = localStorage.getItem('cp_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+})();
+
+window.setTheme = function (theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('cp_theme', theme);
+  document.querySelectorAll('.theme-card').forEach((card) => {
+    card.classList.toggle('active', card.dataset.themeVal === theme);
+  });
+};
+
+// 2. Audio Synthesizer for Emergency Alarm (Web Audio API)
+class EmergencyAlarmSound {
+  constructor() {
+    this.ctx = null;
+    this.isPlaying = false;
+  }
+
+  initCtx() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) this.ctx = new AudioCtx();
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  playAlarm(durationMs = 2000) {
+    const isSoundEnabled = localStorage.getItem('cp_sound_enabled') !== 'false';
+    if (!isSoundEnabled) return;
+
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const volumeLevel = parseFloat(localStorage.getItem('cp_sound_volume') || '0.8');
+      const now = this.ctx.currentTime;
+
+      // Two-tone warble emergency siren
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.linearRampToValueAtTime(1100, now + 0.3);
+      osc.frequency.linearRampToValueAtTime(800, now + 0.6);
+      osc.frequency.linearRampToValueAtTime(1100, now + 0.9);
+      osc.frequency.linearRampToValueAtTime(800, now + 1.2);
+      osc.frequency.linearRampToValueAtTime(1100, now + 1.5);
+
+      gain.gain.setValueAtTime(volumeLevel * 0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + (durationMs / 1000));
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + (durationMs / 1000));
+    } catch (e) {
+      console.warn('Web Audio synthesis failed:', e);
+    }
+  }
+}
+
+window.alarmSound = new EmergencyAlarmSound();
+
+// 3. Toast Notifications
+window.showToast = function (message, type = 'info', duration = 4000) {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div style="flex: 1;">
+      <div style="font-weight: 700; margin-bottom: 2px;">${type === 'error' ? 'ALERT' : type === 'success' ? 'SYSTEM' : 'NOTICE'}</div>
+      <div>${message}</div>
+    </div>
+    <button onclick="this.parentElement.remove()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem;">&times;</button>
+  `;
+
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.transition = 'all 0.3s ease-out';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(50px)';
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+};
+
+// 4. Socket.IO Global Client
+let socket = null;
+if (typeof io !== 'undefined') {
+  socket = io();
+  socket.on('connect', () => {
+    console.log('[Realtime] Connected to CampusPanic Security Gateway:', socket.id);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('[Realtime] Disconnected from Security Gateway');
+  });
+}
+window.appSocket = socket;
+
+// 5. Live Clock Updater & Mobile Drawer
+document.addEventListener('DOMContentLoaded', () => {
+  const clockEl = document.getElementById('liveClock');
+  if (clockEl) {
+    const updateTime = () => {
+      const d = new Date();
+      clockEl.textContent = d.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    };
+    updateTime();
+    setInterval(updateTime, 1000);
+  }
+
+  const mobileToggle = document.getElementById('mobileNavToggle');
+  const sidebar = document.getElementById('appSidebar');
+  if (mobileToggle && sidebar) {
+    mobileToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+  }
+});
