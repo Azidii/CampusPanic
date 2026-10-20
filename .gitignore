@@ -1,0 +1,61 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build and distribution
+dist/
+dist-ssr/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Audio Datasets and Large Archives
+Datasets/
+dataset/
+*.zip
+*.tar.gz
+*.rar
+
+# Intermediate feature dumps
+*.npy
+*.h5
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Server uploads
+DSP-Website/server/uploads/alerts/*
+!DSP-Website/server/uploads/alerts/.gitkeep
+server/uploads/alerts/*
+!server/uploads/alerts/.gitkeep
+
+# IDE and Operating System
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

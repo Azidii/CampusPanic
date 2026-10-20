@@ -1,0 +1,4 @@
+filename,keras_pred,keras_conf,keras_latency_ms,tflite_pred,tflite_conf,tflite_latency_ms,tinyml_pred,tinyml_conf,tinyml_latency_ms,all_agree
+sample_gunshot_ak12.wav,Gunshot,0.9926794767379761,149.57890000368934,Gunshot,0.7985864877700806,3.06060000002617,Gunshot,0.80859375,3.144900001643691,True
+sample_non_scream.wav,Non-Scream,0.9069750905036926,52.87549999775365,Non-Scream,0.48861798644065857,2.9217999981483445,Non-Scream,0.4765625,3.3683000001474284,True
+sample_scream.wav,Scream,0.9697050452232361,50.2178000024287,Scream,0.5329306721687317,3.1153000018093735,Scream,0.5390625,4.266500000085216,True

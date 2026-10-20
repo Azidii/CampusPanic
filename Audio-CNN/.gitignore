@@ -1,0 +1,24 @@
+# Audio Datasets and Large Archives
+Datasets/
+dataset/
+*.zip
+*.tar.gz
+*.rar
+
+# Model checkpoints & feature caches (tracked via Git LFS)
+*.h5
+*.npy
+
+# Whitelist converted models while ignoring intermediate files
+!Audio CNN/TFLite/*.tflite
+!Audio CNN/TinyML/*.tflite
+!Audio CNN/TinyML/*.h
+
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Operating system files
+Thumbs.db
+.DS_Store
