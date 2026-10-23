@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campus Panic · Laptop video test</title>
+<style>
+body{margin:0;background:#0b1220;color:#e8edf6;font:16px system-ui,sans-serif}main{max-width:1000px;margin:32px auto;padding:0 20px}h1{font-size:26px}.muted{color:#9baec9}.card{background:#121e31;border:1px solid #2c3d56;border-radius:12px;padding:18px;margin:18px 0}.screen{aspect-ratio:4/3;background:#050a12;position:relative;display:grid;place-items:center;overflow:hidden}.screen img{width:100%;height:100%;object-fit:contain;position:absolute}.screen p{padding:20px;text-align:center}#state{font-weight:700;color:#fbbf24}.live{color:#34d399!important}#details{white-space:pre-wrap;line-height:1.7}small{line-height:1.6}
+</style>
+<main><h1>Campus Panic · Laptop video test</h1><p class="muted">Android camera → local Wi-Fi → laptop gun detection</p>
+<p class="muted">Using the Campus Panic phone app? <a style="color:#38bdf8" href="/download/camera.apk">Download the Android app</a>, then enter this laptop's Wi-Fi address and the pairing code shown in its receiver terminal.</p>
+<div class="card"><span id="state">WAITING FOR PHONE STREAM</span><span id="time" class="muted"></span></div>
+<div class="screen card"><p id="offline">Waiting for live video. Start the camera app on the Android phone.</p><img id="feed" alt="Live video with gun bounding boxes and confidence percentages" hidden></div>
+<div class="card" id="details">No detections available.</div>
+<small class="muted">Inference runs once on this laptop and is shared by viewers. Audio is disabled. Confidence is the model score. Timing begins when the laptop receives a frame; phone capture and Wi-Fi delay are not measured here.</small></main>
+<script>
+const state=document.querySelector('#state'),feed=document.querySelector('#feed'),offline=document.querySelector('#offline'),details=document.querySelector('#details');
+let lastSequence=null,showLive=false;
+function unavailable(message){showLive=false;feed.hidden=true;feed.removeAttribute('src');offline.hidden=false;offline.textContent=message;state.className='';}
+async function refresh(){
+ try{
+  const response=await fetch('/api/status',{cache:'no-store',signal:AbortSignal.timeout(2000)});
+  if(!response.ok)throw new Error('Status unavailable');
+  const data=await response.json();state.textContent=data.status.toUpperCase();
+  if(data.live){
+   showLive=true;state.className='live';
+   if(lastSequence!==data.sequence||feed.hidden){feed.src='/frame.jpg?seq='+data.sequence;lastSequence=data.sequence;}
+   details.textContent=(data.detections.length?data.detections.map(d=>'gun '+(d.confidence*100).toFixed(1)+'%').join(' · '):'No gun detected in the latest frame.')+'\nInference: '+data.inferenceMs.toFixed(0)+' ms · Frame age at laptop: '+data.frameAgeMs+' ms\nFrames processed: '+data.framesProcessed+' · Frames skipped for freshness: '+data.droppedFrames;
+  }else{unavailable(data.error||'Waiting for a fresh detection frame.');details.textContent='Detection output unavailable while '+data.status+'.';}
+ }catch(error){state.textContent='DISCONNECTED';unavailable('Cannot reach the laptop video service.');details.textContent='No current detection results.';}
+ setTimeout(refresh,250);
+}
+feed.onload=()=>{if(showLive){feed.hidden=false;offline.hidden=true;}};
+feed.onerror=()=>unavailable('No fresh video frame. Reconnecting…');
+refresh();
+</script></html>
