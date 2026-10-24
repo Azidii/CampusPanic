@@ -59,3 +59,10 @@ server/uploads/alerts/*
 *.sw?
 .DS_Store
 Thumbs.db
+
+# Agent skills and customizations
+.agents/
+.agent/
+skills-lock.json
+.taste-skill/
+
