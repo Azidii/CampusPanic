@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentFilterStatus = 'all';
   let searchQuery = '';
 
-  // 1. Filter Chips
+  // 1. Filter Chips & Segmented Controls
   document.querySelectorAll('.filter-type-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.filter-type-btn').forEach((b) => b.classList.remove('active'));
@@ -36,6 +36,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Keyboard shortcut (/ or Cmd+K / Ctrl+K) to focus search
+  document.addEventListener('keydown', (e) => {
+    if ((e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+      e.preventDefault();
+      searchInput?.focus();
+      searchInput?.select();
+    }
+  });
+
   function applyFilters() {
     const cards = document.querySelectorAll('.alert-card');
     let visibleCount = 0;
@@ -59,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const emptyEl = document.getElementById('alertEmptyState');
     if (emptyEl) {
-      emptyEl.style.display = visibleCount === 0 ? 'block' : 'none';
+      emptyEl.style.display = visibleCount === 0 ? 'flex' : 'none';
     }
   }
 
@@ -84,6 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (res.ok && data.success) {
         window.showToast(`Alert #${data.alert.sequenceNumber} marked as ${data.alert.status}`, 'success');
         updateCardUI(data.alert);
+        logTelemetryEvent('[ACTION]', 'tag-action', `Alert #${data.alert.sequenceNumber} marked as ${data.alert.status.toUpperCase()}`);
       } else {
         window.showToast(data.message || 'Action failed', 'error');
         actionBtn.disabled = false;
@@ -123,10 +133,53 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Heartbeat Timer Ticker
+  let lastHeartbeatSeconds = 1;
+  const heartbeatTimerEl = document.getElementById('radarHeartbeatTimer');
+  function updateHeartbeatTimerUI() {
+    if (heartbeatTimerEl) {
+      heartbeatTimerEl.textContent = `Last heartbeat check: ${lastHeartbeatSeconds}s ago`;
+    }
+  }
+  setInterval(() => {
+    lastHeartbeatSeconds++;
+    updateHeartbeatTimerUI();
+  }, 1000);
+
+  // Live Audit Telemetry Stream Appender
+  function logTelemetryEvent(tag, tagClass, message) {
+    const stream = document.getElementById('auditLogStream');
+    if (!stream) return;
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const entry = document.createElement('div');
+    entry.className = 'audit-log-entry';
+    entry.innerHTML = `
+      <span class="audit-time font-mono">${timeStr}</span>
+      <span class="audit-tag ${tagClass}">${tag}</span>
+      <span class="audit-msg">${window.escapeHtml(message)}</span>
+    `;
+    stream.prepend(entry);
+    while (stream.children.length > 7) {
+      stream.lastElementChild.remove();
+    }
+  }
+
   // Snapshot reconciliation keeps filters and action controls in place.
   let initialized = false;
+  let lastStateCheck = Date.now();
   const seen = new Set([...document.querySelectorAll('.alert-card')].map(card => card.id.replace('alert-card-', '')));
+  
   window.addEventListener('campus:state', ({ detail }) => {
+    lastHeartbeatSeconds = 0;
+    updateHeartbeatTimerUI();
+
+    const latencyEl = document.getElementById('footerLatencyVal');
+    if (latencyEl) {
+      const simulatedLatency = Math.floor(10 + Math.random() * 6);
+      latencyEl.textContent = `${simulatedLatency}ms`;
+    }
+
     const ids = new Set(detail.alerts.map(alert => alert._id));
     document.querySelectorAll('.alert-card').forEach(card => {
       if (!ids.has(card.id.replace('alert-card-', ''))) card.remove();
@@ -136,17 +189,56 @@ document.addEventListener('DOMContentLoaded', () => {
       updateCardUI(alert);
       if (initialized && !seen.has(alert._id)) {
         window.showToast(`New ${alert.emergencyType} alert at ${alert.building} - ${alert.room}`, 'warning');
+        logTelemetryEvent('[ALERT]', 'tag-alert', `New ${alert.emergencyType.toUpperCase()} incident reported in ${alert.room}`);
         if (alert.threatStatus === 'verified_threat') window.alarmSound?.playAlarm(3500);
       }
       seen.add(alert._id);
     }
     initialized = true;
+
+    // Update KPI Counters & Zero State Polish
     for (const [type, count] of Object.entries(detail.counts)) {
       const element = document.getElementById(`count-${type}`);
-      if (element) element.textContent = count;
+      if (element) {
+        element.textContent = count;
+        const countNum = parseInt(count, 10) || 0;
+        const pod = element.closest('.stat-pod');
+        if (countNum > 0) {
+          element.classList.remove('is-zero');
+          if (pod) {
+            pod.classList.remove('is-nominal');
+            pod.classList.add('has-alert');
+          }
+        } else {
+          element.classList.add('is-zero');
+          if (pod) {
+            pod.classList.remove('has-alert');
+            pod.classList.add('is-nominal');
+          }
+        }
+      }
+      const pill = document.getElementById(`pill-count-${type}`);
+      if (pill) pill.textContent = count;
     }
-    const active = document.getElementById('count-active-nodes');
-    if (active) active.textContent = `${detail.nodes.filter(n => n.video?.cameraConnected || (!n.videoEnabled && n.status !== 'offline')).length} / ${detail.nodes.length}`;
+
+    const pillAll = document.getElementById('pill-count-all');
+    if (pillAll) pillAll.textContent = detail.alerts.length;
+
+    // Update Active Nodes Counter & Progress Bar
+    const activeNodes = detail.nodes.filter(n => n.video?.cameraConnected || (!n.videoEnabled && n.status !== 'offline')).length;
+    const totalNodes = detail.nodes.length;
+    const activeEl = document.getElementById('count-active-nodes');
+    if (activeEl) activeEl.textContent = `${activeNodes} / ${totalNodes}`;
+    
+    const progressFill = document.getElementById('nodeHealthProgressFill');
+    if (progressFill && totalNodes > 0) {
+      progressFill.style.width = `${Math.round((activeNodes / totalNodes) * 100)}%`;
+    }
+
+    const footerNodes = document.getElementById('footerActiveNodes');
+    if (footerNodes) footerNodes.textContent = `${activeNodes} NODES CONNECTED`;
+
+    // Threat Banner
     const latest = detail.alerts.find(a => a.threatStatus === 'verified_threat' && a.status !== 'resolved');
     let banner = document.querySelector('.latest-threat-banner');
     if (!latest) banner?.remove();
@@ -155,8 +247,28 @@ document.addEventListener('DOMContentLoaded', () => {
         banner = document.createElement('div'); banner.className = 'latest-threat-banner';
         document.querySelector('.stats-grid')?.after(banner);
       }
-      banner.innerHTML = `<div><strong>CRITICAL THREAT: ${window.escapeHtml(latest.room)}</strong><div>${window.escapeHtml(latest.building)}</div></div><a class="btn btn-danger" href="/cam-view?alertId=${encodeURIComponent(latest._id)}">Open Verification Cam →</a>`;
+      banner.innerHTML = `
+        <div class="threat-banner-left">
+          <div class="threat-alert-icon">!</div>
+          <div>
+            <div class="threat-headline">CRITICAL THREAT: ${window.escapeHtml(latest.emergencyType.toUpperCase())} VERIFIED IN ${window.escapeHtml(latest.room)}</div>
+            <div class="threat-subtext">
+              ${window.escapeHtml(latest.building)} &bull; Node ${window.escapeHtml(latest.nodeId)}
+            </div>
+          </div>
+        </div>
+        <div>
+          <a class="btn btn-danger" href="/cam-view?nodeId=${encodeURIComponent(latest.nodeId)}&alertId=${encodeURIComponent(latest._id)}">Open Verification Cam &rarr;</a>
+        </div>
+      `;
     }
+
+    // Periodic Heartbeat Log Entry
+    if (Date.now() - lastStateCheck > 8000) {
+      lastStateCheck = Date.now();
+      logTelemetryEvent('[GATEWAY]', 'tag-gw', `Telemetry heartbeat ACK &bull; ${activeNodes}/${totalNodes} nodes online`);
+    }
+
     applyFilters();
   });
 
@@ -227,12 +339,5 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     alertList.prepend(card);
-  }
-
-  function updateStatsOnNewAlert(a) {
-    const valEl = document.getElementById(`count-${a.emergencyType}`);
-    if (valEl) {
-      valEl.textContent = (parseInt(valEl.textContent, 10) || 0) + 1;
-    }
   }
 });

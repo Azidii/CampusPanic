@@ -4,71 +4,72 @@
    ========================================================= */
 
 :root {
-  /* Tactical Obsidian SOC Palette */
+  /* Tactical Mission-Critical SOC Command Palette (Linear / Palantir Gotham) */
   color-scheme: dark;
-  --bg-primary: #090a0f;          /* App Canvas Background: Obsidian SOC base */
-  --bg-secondary: #0d0f17;        /* Sidebar & Header Surface */
-  --bg-surface: #121520;          /* Elevated Cards / Panels */
-  --bg-recessed: #07080c;         /* Input Wells / Recessed Viewport */
-  --bg-surface-hover: #181d2c;    /* Direct hover state */
-  --bg-surface-active: #1f2538;   /* Click/active physical receipt */
+  --bg-primary: #07090e;          /* Base Canvas: Mission-Critical Obsidian */
+  --bg-secondary: #0d1117;        /* Elevated Surfaces: Sidebar & Header */
+  --bg-surface: #131922;          /* Interactive Cards / Bento Pods */
+  --bg-recessed: #0a0d14;         /* Recessed Wells & Telemetry Readouts */
+  --bg-surface-hover: #1a2230;    /* Direct hover state */
+  --bg-surface-active: #212c3e;   /* Click/active physical receipt */
 
-  --border-subtle: rgba(255, 255, 255, 0.08); /* Structural Hairline Borders */
-  --border-highlight: rgba(255, 255, 255, 0.04); /* Subtle top-edge inner highlight */
+  --border-subtle: rgba(255, 255, 255, 0.07); /* Crisp hairlines */
+  --border-highlight: rgba(255, 255, 255, 0.05); /* Top-edge inner highlight */
   --border-strong: rgba(255, 255, 255, 0.14);
-  --border-input: #1e2436;        /* Recessed input border */
-  --border-focus: #0284c7;        /* Focused control outline (Sky-600) */
-  --border-active: #38bdf8;       /* Highlight accent border */
+  --border-input: rgba(255, 255, 255, 0.1);
+  --border-focus: #3b82f6;        /* Electric Blue Focus */
+  --border-active: #60a5fa;
 
   --text-primary: #f1f5f9;        /* Maximum contrast body & headers */
   --text-secondary: #94a3b8;      /* Supporting descriptions & labels */
   --text-muted: #64748b;          /* Metadata, hints, and timestamps */
-  --text-inverse: #090a0f;
+  --text-inverse: #07090e;
 
   /* Priority Threat Alert Matrix (Tactical Mission-Critical Palette) */
-  --threat-verified: #ef4444;       /* Signal Red - Confirmed Gunshot / CV Firearm */
+  --threat-verified: #ef4444;       /* Crimson - Confirmed Gunshot / CV Firearm */
   --threat-verified-bg: rgba(239, 68, 68, 0.12);
   --threat-verified-border: rgba(239, 68, 68, 0.45);
 
-  --threat-unverified: #f97316;     /* Vivid Amber - Acoustic TinyML Trigger */
+  --threat-unverified: #f97316;     /* Amber - Acoustic TinyML Trigger */
   --threat-unverified-bg: rgba(249, 115, 22, 0.12);
   --threat-unverified-border: rgba(249, 115, 22, 0.45);
 
-  --type-medical: #0284c7;          /* Cadet Medical Blue */
-  --type-medical-bg: rgba(2, 132, 199, 0.12);
-  --type-medical-border: rgba(2, 132, 199, 0.4);
+  --type-medical: #06b6d4;          /* Cyan / Sky Medical */
+  --type-medical-bg: rgba(6, 182, 212, 0.12);
+  --type-medical-border: rgba(6, 182, 212, 0.4);
 
-  --type-fire: #d97706;             /* Hazard Orange/Flame */
-  --type-fire-bg: rgba(217, 119, 6, 0.12);
-  --type-fire-border: rgba(217, 119, 6, 0.4);
+  --type-fire: #f59e0b;             /* Amber / Hazard Flame */
+  --type-fire-bg: rgba(245, 158, 11, 0.12);
+  --type-fire-border: rgba(245, 158, 11, 0.4);
 
-  --type-panic: #db2777;            /* Distress Magenta / Manual Panic (Anti-slop) */
-  --type-panic-bg: rgba(219, 39, 119, 0.12);
-  --type-panic-border: rgba(219, 39, 119, 0.4);
+  --type-panic: #f43f5e;            /* Rose / Manual Panic */
+  --type-panic-bg: rgba(244, 63, 94, 0.12);
+  --type-panic-border: rgba(244, 63, 94, 0.4);
 
-  --status-online: #10b981;         /* Operational Link Green */
+  --status-online: #10b981;         /* Emerald Online / Healthy */
   --status-offline: #64748b;        /* Disconnected Slate */
   --status-active: #ef4444;         /* In-Alarm Trigger */
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-mono: 'JetBrains Mono', 'Geist Mono', monospace;
 
   /* Themed Surfaces & Focus Tokens */
-  --accent: #0284c7;
-  --accent-soft: rgba(2, 132, 199, 0.22);
-  --rule-2: #242c40;
+  --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.18);
+  --rule-2: #1e293b;
 
   /* Geometry & Rhythm */
-  --sidebar-width: 250px;
-  --header-height: 60px;
+  --sidebar-width: 240px;
+  --header-height: 56px;
+  --footer-height: 32px;
   --radius-xs: 4px;
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  /* Explicit micro-transition presets (replaces wildcard transition rules) */
-  --transition-fast: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  /* Explicit micro-transition presets */
+  --transition-fast: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
   --transition-press: transform 0.1s ease-out;
 
   /* Shadows: Single elevation policy - tonal borders over blurred blobs */
@@ -203,11 +204,12 @@ a {
   margin: 0 auto;
 }
 
-/* Header Navbar: SOC Status & Telemetry Bar */
+/* Header Navbar: SOC Status & Telemetry Bar (56px fixed) */
 .top-nav {
   height: var(--header-height);
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-subtle);
+  box-shadow: inset 0 -1px 0 0 rgba(255, 255, 255, 0.03);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -220,14 +222,14 @@ a {
 .nav-left, .nav-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .nav-mobile-toggle {
   display: none;
   background: none;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   color: var(--text-primary);
   font-size: 1.1rem;
   padding: 5px 10px;
@@ -257,8 +259,8 @@ a {
   align-items: center;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 0.74rem;
-  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
   font-weight: 700;
   line-height: 1;
 }
@@ -273,7 +275,7 @@ a {
 }
 
 .soc-current-page {
-  color: #38bdf8;
+  color: #60a5fa;
 }
 
 @media (max-width: 600px) {
@@ -282,49 +284,165 @@ a {
   }
 }
 
+/* SOC Live Status Indicator Badge */
 .system-status-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  background-color: rgba(16, 185, 129, 0.08);
+  padding: 3px 10px;
+  border-radius: var(--radius-xs);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+  font-weight: 700;
+  color: #a7f3d0;
+  letter-spacing: 0.06em;
+}
+
+.pulse-ring-container {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse-ring-ping {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: #10b981;
+  opacity: 0.75;
+  animation: pulsePing 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.pulse-ring-core {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+@keyframes pulsePing {
+  0% { transform: scale(1); opacity: 0.8; }
+  75%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* Live Tactical Monospace Clock Pod with UTC/LOCAL Micro-label */
+.soc-live-clock-pod {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background-color: var(--bg-recessed);
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.04);
   padding: 4px 10px;
   border-radius: var(--radius-xs);
-  border: 1px solid var(--border-subtle);
-  font-weight: 700;
-  color: var(--text-secondary);
 }
 
-.pulse-dot-green {
-  width: 7px;
-  height: 7px;
-  background-color: var(--status-online);
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--status-online);
-  animation: pulseDot 2s infinite ease-in-out;
-}
-
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.85); }
+.soc-clock-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
 }
 
 .soc-live-clock {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  background-color: var(--bg-recessed);
-  border: 1px solid var(--border-subtle);
-  padding: 4px 10px;
-  border-radius: var(--radius-xs);
-  letter-spacing: 0.05em;
+  font-size: 0.82rem;
+  color: var(--text-primary);
   font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
-/* Sidebar Navigation */
+/* Hardware-Style Audio Siren Button */
+.hardware-siren-btn {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 2px 6px rgba(0, 0, 0, 0.35);
+  border-radius: var(--radius-xs);
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: var(--transition-fast), var(--transition-press);
+}
+
+.hardware-siren-btn:hover {
+  background-color: var(--bg-surface-hover);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #ffffff;
+}
+
+.hardware-siren-btn:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.siren-led-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.siren-btn-text {
+  letter-spacing: 0.04em;
+}
+
+.siren-state-pill {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  letter-spacing: 0.05em;
+}
+
+/* Ghost Danger Button (Header Signout) */
+.btn-ghost-danger {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #f87171;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--radius-xs);
+  padding: 5px 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: var(--transition-fast), var(--transition-press);
+}
+
+.btn-ghost-danger:hover {
+  background-color: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-ghost-danger:active {
+  transform: scale(0.97);
+}
+
+/* Left Navigation Sidebar (240px fixed width) */
 .sidebar {
   width: var(--sidebar-width);
   background-color: var(--bg-secondary);
@@ -354,23 +472,21 @@ a {
   height: var(--header-height);
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 18px;
   border-bottom: 1px solid var(--border-subtle);
+  box-shadow: inset 0 -1px 0 0 rgba(255, 255, 255, 0.03);
 }
 
 .brand-badge {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 800;
-  font-size: 1.05rem;
-  letter-spacing: -0.025em;
-  color: var(--text-primary);
+  text-decoration: none;
 }
 
 .brand-icon {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   background-color: var(--threat-verified);
   border-radius: var(--radius-xs);
   display: flex;
@@ -378,41 +494,65 @@ a {
   justify-content: center;
   color: #ffffff;
   flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.35);
+}
+
+.brand-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.brand-name {
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+  line-height: 1.15;
+}
+
+.brand-version-tag {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: #64748b;
+  font-weight: 700;
+  letter-spacing: 0.06em;
 }
 
 .sidebar-nav {
   flex: 1;
-  padding: 16px 12px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   overflow-y: auto;
 }
 
 .nav-group-title {
-  font-size: 0.66rem;
-  font-weight: 800;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--text-muted);
-  padding: 12px 10px 4px;
+  color: #4b5563;
+  padding: 14px 10px 4px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
+  gap: 11px;
+  padding: 7px 11px;
+  border-radius: var(--radius-xs);
   color: var(--text-secondary);
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 500;
-  border-left: 3px solid transparent;
+  border-left: 2px solid transparent;
   transition: var(--transition-fast);
 }
 
 .nav-item:hover {
-  background-color: var(--bg-surface-hover);
+  background-color: rgba(255, 255, 255, 0.03);
   color: var(--text-primary);
 }
 
@@ -421,19 +561,22 @@ a {
   transform: scale(0.98);
 }
 
+/* Active Dashboard item with electric blue left accent & subtle gradient */
 .nav-item.active {
-  background-color: var(--bg-surface);
-  color: #38bdf8;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.12) 0%, transparent 100%);
+  color: #ffffff;
   font-weight: 600;
-  border-left: 3px solid #0284c7;
+  border-left: 2px solid #3b82f6;
 }
 
 .nav-item.active svg {
-  stroke: #38bdf8;
+  stroke: #3b82f6;
 }
 
+/* Active Threats Map with subtle crimson semantic tint and live count pill */
 .nav-item-threat {
   color: #fca5a5;
+  background-color: rgba(239, 68, 68, 0.04);
 }
 
 .nav-item-threat svg {
@@ -441,80 +584,207 @@ a {
 }
 
 .nav-item-threat:hover {
-  background-color: rgba(239, 68, 68, 0.08);
+  background-color: rgba(239, 68, 68, 0.1);
   color: #ffffff;
 }
 
 .nav-item-threat.active {
   border-left-color: #ef4444;
   color: #ffffff;
-  background-color: rgba(239, 68, 68, 0.12);
+  background: linear-gradient(90deg, rgba(239, 68, 68, 0.15) 0%, transparent 100%);
 }
 
-.nav-item .badge-count {
+.threat-pill-badge {
   margin-left: auto;
-  font-size: 0.7rem;
+  font-size: 0.64rem;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  padding: 2px 6px;
-  border-radius: var(--radius-xs);
-  background-color: var(--threat-verified);
-  color: #ffffff;
-  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  font-weight: 800;
+  letter-spacing: 0.05em;
 }
 
+/* User Footer Profile Pod */
 .sidebar-footer {
-  padding: 14px 16px;
+  padding: 10px 12px;
   border-top: 1px solid var(--border-subtle);
+  background-color: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
-.user-snippet {
+.user-profile-pod {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
+  min-width: 0;
+  flex: 1;
+}
+
+.user-avatar-wrap {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
 }
 
 .user-avatar {
   width: 30px;
   height: 30px;
   border-radius: var(--radius-xs);
-  background-color: var(--bg-recessed);
-  border: 1px solid var(--border-strong);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--border-active);
-  font-weight: 700;
+  color: #60a5fa;
+  font-weight: 800;
   font-size: 0.8rem;
 }
 
-.user-info-text .user-name {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.2;
+.user-status-dot.online {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  border: 1.5px solid var(--bg-secondary);
+  box-shadow: 0 0 4px #10b981;
 }
 
-.user-info-text .user-role {
-  font-size: 0.68rem;
-  text-transform: uppercase;
+.user-info-text {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.user-info-text .user-name {
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--border-active);
+  color: var(--text-primary);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-role-badge {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.12);
+  padding: 1px 5px;
+  border-radius: 2px;
+  display: inline-block;
+  margin-top: 2px;
 }
 
 .sidebar-signout-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--text-muted);
-  font-size: 1.1rem;
-  padding: 4px;
+  border: 1px solid transparent;
   transition: var(--transition-fast);
+  flex-shrink: 0;
 }
 
 .sidebar-signout-btn:hover {
   color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Fixed Bottom Status Bar (32px fixed footer) */
+.app-footer {
+  height: var(--footer-height);
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.03);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: #64748b;
+  font-family: var(--font-mono);
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+}
+
+.footer-left, .footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 7px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 3px;
+  color: #34d399;
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+
+.footer-dot-green {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 5px #10b981;
+}
+
+.footer-mono-label {
+  letter-spacing: 0.06em;
+}
+
+.footer-divider {
+  color: #1e293b;
+  font-weight: 300;
+}
+
+.footer-brand {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.footer-sub {
+  color: var(--text-muted);
+}
+
+.footer-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
+}
+
+.footer-meta-mono {
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 900px) {
+  .footer-sub, .footer-brand {
+    display: none;
+  }
 }
 
 /* High-Conviction Tactical Buttons */
