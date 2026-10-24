@@ -1,124 +1,13 @@
 import express from 'express';
 import { Camera } from '../models/Camera.js';
 import { requireAuth } from '../middleware/auth.js';
-import { uploadAlertImage, saveBase64Image } from '../middleware/upload.js';
-import { getSocketIO } from '../sockets/socketHandler.js';
 
 const router = express.Router();
-
 router.get('/', requireAuth, async (req, res, next) => {
-  try {
-    const cameras = await Camera.find().sort({ building: 1, room: 1 });
-    return res.status(200).json({
-      success: true,
-      count: cameras.length,
-      cameras
-    });
-  } catch (err) {
-    next(err);
-  }
+  try { res.json({ success: true, cameras: await Camera.find().sort({ label: 1 }) }); }
+  catch (error) { next(error); }
 });
-
-router.post('/', requireAuth, async (req, res, next) => {
-  try {
-    const { cameraId, label, nodeId, building, room } = req.body;
-    if (!cameraId || !label) {
-      return res.status(400).json({ success: false, message: 'cameraId and label are required' });
-    }
-
-    const camera = await Camera.findOneAndUpdate(
-      { cameraId },
-      {
-        label,
-        nodeId: nodeId || null,
-        building: building || 'Campus Main',
-        room: room || 'Room 101',
-        online: true,
-        lastFrameAt: new Date()
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    const io = getSocketIO();
-    if (io) {
-      io.emit('camera:status', { cameraId: camera.cameraId, online: true });
-    }
-
-    return res.status(201).json({ success: true, camera });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post('/:cameraId/frame', uploadAlertImage.single('frame'), async (req, res, next) => {
-  try {
-    const { cameraId } = req.params;
-    let frameUrl = null;
-
-    if (req.file) {
-      frameUrl = `/uploads/alerts/${req.file.filename}`;
-    } else if (req.body.image) {
-      frameUrl = saveBase64Image(req.body.image);
-    }
-
-    if (!frameUrl) {
-      return res.status(400).json({ success: false, message: 'No frame image provided.' });
-    }
-
-    const camera = await Camera.findOneAndUpdate(
-      { cameraId },
-      {
-        online: true,
-        lastFrameAt: new Date(),
-        lastFrameUrl: frameUrl
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-
-    const io = getSocketIO();
-    if (io) {
-      io.emit('camera:live_frame', {
-        cameraId: camera.cameraId,
-        frameUrl,
-        timestamp: camera.lastFrameAt
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      cameraId: camera.cameraId,
-      frameUrl,
-      timestamp: camera.lastFrameAt
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.patch('/:cameraId/status', requireAuth, async (req, res, next) => {
-  try {
-    const { cameraId } = req.params;
-    const { online } = req.body;
-
-    const camera = await Camera.findOneAndUpdate(
-      { cameraId },
-      { online: Boolean(online) },
-      { new: true }
-    );
-
-    if (!camera) {
-      return res.status(404).json({ success: false, message: 'Camera not found.' });
-    }
-
-    const io = getSocketIO();
-    if (io) {
-      io.emit('camera:status', { cameraId: camera.cameraId, online: camera.online });
-    }
-
-    return res.status(200).json({ success: true, camera });
-  } catch (err) {
-    next(err);
-  }
-});
-
+// Retired upload/registration routes cannot bypass node pairing.
+router.use((req, res) => res.status(410).json({ success: false,
+  message: 'Use Security Nodes to register cameras and the paired Android connection to upload frames.' }));
 export default router;

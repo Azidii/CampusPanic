@@ -44,7 +44,7 @@
 
       <!-- Injected JSON Payload for Leaflet Script -->
       <script id="nodesData" type="application/json">
-        <%- JSON.stringify(nodes) %>
+        <%- JSON.stringify(nodes).replace(/</g, '\\u003c') %>
       </script>
     </main>
 

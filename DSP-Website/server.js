@@ -6,14 +6,16 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
-import { Server } from 'socket.io';
 
 import { config } from './config/config.js';
 import { connectDB } from './config/db.js';
-import { initSocketIO } from './sockets/socketHandler.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { startRetentionCleaner } from './utils/retentionCleaner.js';
 import { User } from './models/User.js';
+import phoneRoutes from './routes/phoneRoutes.js';
+import liveRoutes from './routes/liveRoutes.js';
+import mediaRoutes from './routes/mediaRoutes.js';
+import { videoService } from './services/videoService.js';
 
 // Route Imports
 import viewRoutes from './routes/viewRoutes.js';
@@ -29,16 +31,6 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-
-// Initialize Socket.IO
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
-    credentials: true
-  }
-});
-initSocketIO(io);
 
 // Template View Engine Setup
 app.set('view engine', 'ejs');
@@ -60,10 +52,14 @@ app.use(
   })
 );
 
+// Camera JPEGs use their own authentication, body limit and transmission limiter.
+app.use(cookieParser());
+app.use('/api/camera', phoneRoutes);
+app.use('/media/nodes', mediaRoutes);
+
 // Parsers
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
-app.use(cookieParser());
 
 // Static File Directories
 app.use('/css', express.static(path.resolve(__dirname, 'css')));
@@ -92,6 +88,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Routes
+app.use('/api/live', liveRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/profile', profileRoutes);
@@ -145,8 +142,9 @@ const startServer = async () => {
     await connectDB();
     await ensureInitialAdmin();
     startRetentionCleaner();
+    videoService.start();
 
-    server.listen(config.port, () => {
+    server.listen(config.port, process.env.HOST || '0.0.0.0', () => {
       console.log(`=======================================================`);
       console.log(` CampusPanic Web Console listening at http://localhost:${config.port}`);
       console.log(` Environment: ${config.env}`);
@@ -159,6 +157,16 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) startServer();
 
-export { app, server, io };
+let shuttingDown = false;
+async function shutdown() {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  await videoService.stop();
+  server.close();
+  process.exit(0);
+}
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);
+export { app, server };

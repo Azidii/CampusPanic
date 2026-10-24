@@ -7,6 +7,8 @@ import { Camera } from '../models/Camera.js';
 import { config } from '../config/config.js';
 import { requireViewAuth, requireViewAdmin } from '../middleware/auth.js';
 
+import { videoService } from '../services/videoService.js';
+
 const router = express.Router();
 
 /**
@@ -55,6 +57,7 @@ router.get('/', requireViewAuth, async (req, res, next) => {
       Node.countDocuments({ status: 'active' })
     ]);
 
+    const currentNodes = await videoService.describe(nodes);
     const counts = {
       gunshot: alerts.filter((a) => a.emergencyType === 'gunshot').length,
       medical: alerts.filter((a) => a.emergencyType === 'medical').length,
@@ -69,10 +72,10 @@ router.get('/', requireViewAuth, async (req, res, next) => {
       page: 'dashboard',
       user: req.user,
       alerts,
-      nodes,
+      nodes: currentNodes,
       counts,
       totalNodes,
-      activeNodesCount
+      activeNodesCount: currentNodes.filter(n => n.video?.cameraConnected || (!n.videoEnabled && n.status !== 'offline')).length
     });
   } catch (err) {
     next(err);
@@ -102,7 +105,7 @@ router.get('/cam-view', requireViewAuth, async (req, res, next) => {
       selectedNode = await Node.findOne({ nodeId });
     }
 
-    if (!selectedNode && nodes.length > 0) {
+    if (!selectedNode && !selectedAlert && nodes.length > 0) {
       selectedNode = nodes[0];
     }
 
@@ -124,12 +127,12 @@ router.get('/cam-view', requireViewAuth, async (req, res, next) => {
 // 4. All Cameras CCTV Grid
 router.get('/cameras', requireViewAuth, async (req, res, next) => {
   try {
-    const cameras = await Camera.find().sort({ building: 1, room: 1 });
+    const nodes = await videoService.describe(await Node.find().sort({ building: 1, room: 1 }));
     res.render('all-cams', {
-      title: 'CCTV Matrix Surveillance — CampusPanic',
+      title: 'CCTV Monitoring Room — CampusPanic',
       page: 'all-cams',
       user: req.user,
-      cameras
+      nodes
     });
   } catch (err) {
     next(err);
@@ -139,7 +142,7 @@ router.get('/cameras', requireViewAuth, async (req, res, next) => {
 // 5. Campus Map View (All Nodes)
 router.get('/map', requireViewAuth, async (req, res, next) => {
   try {
-    const nodes = await Node.find().sort({ building: 1, room: 1 });
+    const nodes = await videoService.describe(await Node.find().sort({ building: 1, room: 1 }));
     res.render('map-view', {
       title: 'Campus Node Map — CampusPanic',
       page: 'map-view',
@@ -171,24 +174,12 @@ router.get('/active-nodes-map', requireViewAuth, async (req, res, next) => {
   }
 });
 
-// 7. Broadcaster / Camera Gateway
-router.get('/streamer', requireViewAuth, async (req, res, next) => {
-  try {
-    const [nodes, cameras] = await Promise.all([
-      Node.find().sort({ building: 1, room: 1 }),
-      Camera.find().sort({ label: 1 })
-    ]);
-
-    res.render('broadcaster', {
-      title: 'Camera Gateway Broadcaster — CampusPanic',
-      page: 'broadcaster',
-      user: req.user,
-      nodes,
-      cameras
-    });
-  } catch (err) {
-    next(err);
-  }
+// Security node setup. Preserve existing /streamer bookmarks.
+router.get('/streamer', requireViewAuth, (req, res) => res.redirect('/security-nodes'));
+router.get('/security-nodes', requireViewAuth, (req, res) => {
+  res.render('security-nodes', {
+    title: 'Security Nodes — CampusPanic', page: 'security-nodes', user: req.user
+  });
 });
 
 // 8. Profile View

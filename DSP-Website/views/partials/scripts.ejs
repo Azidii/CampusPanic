@@ -1,6 +1,3 @@
-  <!-- Socket.IO Client -->
-  <script src="/socket.io/socket.io.js"></script>
-
   <!-- Leaflet Map JS (for maps) -->
   <% if (page === 'map-view' || page === 'active-nodes-map') { %>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -9,6 +6,9 @@
   <!-- Core Common JavaScript -->
   <script src="/js/common.js"></script>
 
+  <% if (['all-cams', 'security-nodes', 'cam-view'].includes(page)) { %>
+    <script src="/js/nodes-ui.js"></script>
+  <% } %>
   <!-- Dedicated Page-Specific JavaScript -->
   <% if (page) { %>
     <script src="/js/<%= page %>.js"></script>

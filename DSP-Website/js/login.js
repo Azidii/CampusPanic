@@ -8,24 +8,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorMsg = document.getElementById('loginErrorMsg');
   const submitBtn = document.getElementById('loginSubmitBtn');
 
-  // Quick fill demo buttons
-  const demoAdminBtn = document.getElementById('demoAdminBtn');
-  const demoGuardBtn = document.getElementById('demoGuardBtn');
-
-  if (demoAdminBtn) {
-    demoAdminBtn.addEventListener('click', () => {
-      document.getElementById('email').value = 'admin@campuspanic.edu';
-      document.getElementById('password').value = 'Admin123!';
-    });
-  }
-
-  if (demoGuardBtn) {
-    demoGuardBtn.addEventListener('click', () => {
-      document.getElementById('email').value = 'guard@campuspanic.edu';
-      document.getElementById('password').value = 'Guard123!';
-    });
-  }
-
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

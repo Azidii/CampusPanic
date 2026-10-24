@@ -1,0 +1,41 @@
+<%- include('partials/head') %>
+<div class="app-container">
+  <%- include('partials/sidebar') %>
+  <div class="main-content">
+    <%- include('partials/navbar') %>
+    <main class="page-body" id="securityNodePage" data-admin="<%= user.role === 'admin' %>">
+      <div class="nodes-heading">
+        <div><p class="nodes-eyebrow">DEVICE CONNECTIONS</p><h1>Security Nodes</h1><p>Name a node, pair your phone, and monitor its video from the CCTV room.</p></div>
+        <a href="/cameras" class="btn btn-outline">Open CCTV Room →</a>
+      </div>
+      <div id="receiverStatus" class="receiver-status" role="status">Checking model service…</div>
+      <div class="nodes-setup-layout">
+        <section>
+          <div class="node-viewport setup-preview" id="setupPreview">
+            <img hidden alt="Selected node live video">
+            <div class="node-idle"><span class="camera-symbol">◉</span><strong>Camera is currently inactive</strong><span>Create a node and connect the Campus Panic Camera app.</span></div>
+            <span class="node-muted">🔇 Audio not configured</span>
+          </div>
+          <div class="nodes-section-heading"><h2>Your security nodes</h2><span id="nodeCount">0 nodes</span></div>
+          <div id="setupNodeList" class="setup-node-list"><p class="nodes-hint">Loading nodes…</p></div>
+        </section>
+        <section class="card node-create-panel">
+          <h2>Create a security node</h2><p class="nodes-hint">Your phone connects to this node using its generated pairing code.</p>
+          <% if (user.role === 'admin') { %>
+            <form id="createNodeForm" class="node-form">
+              <%- include('partials/node-fields', { prefix: 'create' }) %>
+              <button class="btn btn-primary" type="submit">Create Node &amp; Get Pairing Code</button>
+              <p id="createNodeError" class="node-error" role="alert"></p>
+            </form>
+          <% } else { %>
+            <p class="nodes-hint">An administrator can create and manage security nodes. You can view their connected feeds.</p>
+          <% } %>
+          <div class="node-audio-space"><strong>🔇 Audio</strong><span>Not configured · Reserved for a future audio connection</span></div>
+        </section>
+      </div>
+      <%- include('partials/node-dialog') %>
+    </main>
+    <%- include('partials/footer') %>
+  </div>
+</div>
+<%- include('partials/scripts') %>

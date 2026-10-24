@@ -21,8 +21,13 @@ CampusPanic/
 │   └── README.md
 │
 └── DSP-Website/           # Full-stack monitoring and incident alert platform
-    ├── client/            # Vite + React frontend dashboard
-    ├── server/            # Node.js + Express + MongoDB alert ingestion backend
+    ├── server.js          # Express + EJS application entrypoint
+    ├── views/             # EJS security console pages
+    ├── routes/            # Express page and REST API routes
+    ├── models/            # MongoDB models
+    ├── css/               # Console styles
+    ├── js/                # Browser controllers
+    ├── uploads/           # Incident snapshots
     ├── INGEST_SPEC.md     # Gateway ingestion API specification
     └── README.md
 ```
@@ -37,8 +42,8 @@ CampusPanic/
 - **Git LFS**: Large model weights (`.keras`) and feature caches (`.npz`) are tracked using Git Large File Storage (LFS).
 
 ### 2. [DSP-Website](./DSP-Website)
-- **Client**: Modern responsive React dashboard for security personnel, providing real-time alert notifications, device telemetry, campus map visualizations, and incident status workflows.
-- **Server**: Express.js REST and WebSocket/SSE backend for securely ingesting alerts from IoT audio edge gateways, persisting incident logs, and streaming live updates.
+- **Client**: Express/EJS dashboard for security personnel, providing real-time alert notifications, device telemetry, campus map visualizations, and incident status workflows.
+- **Server**: Express.js REST and Socket.IO backend for securely ingesting alerts from IoT audio edge gateways, persisting incident logs, and streaming live updates.
 
 ---
 
@@ -60,16 +65,10 @@ CampusPanic/
 
 2. **Web Application Setup**:
    ```bash
-   # Server setup
-   cd DSP-Website/server
-   cp .env.example .env
+   cd DSP-Website
+   # Optional: copy .env.example to .env and configure it
    npm install
-   npm run dev
-
-   # Client setup (in a new terminal)
-   cd DSP-Website/client
-   npm install
-   npm run dev
+   npm start
    ```
 
 3. **Audio-CNN Setup**:
@@ -77,3 +76,6 @@ CampusPanic/
    cd Audio-CNN
    # Follow instructions in Audio-CNN/README.md for Python environment setup
    ```
+
+
+The website uses one Express/Node.js application with EJS pages at http://localhost:5000. The alternate React/Vite client and its duplicate backend were removed on October 24, 2026. From the repository root, npm start also launches this application.

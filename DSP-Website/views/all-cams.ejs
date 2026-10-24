@@ -1,89 +1,17 @@
 <%- include('partials/head') %>
-
 <div class="app-container">
   <%- include('partials/sidebar') %>
-
   <div class="main-content">
     <%- include('partials/navbar') %>
-
-    <main class="page-body">
-      <div class="cctv-header-bar">
-        <div>
-          <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">CCTV Surveillance Matrix</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Multi-feed security operations camera wall &bull; Click any feed to enlarge</p>
-        </div>
-
-        <div>
-          <a href="/streamer" class="btn btn-outline">
-            Launch Webcam Broadcaster &rarr;
-          </a>
-        </div>
-      </div>
-
-      <div class="cctv-grid">
-        <% if (cameras && cameras.length > 0) { %>
-          <% cameras.forEach(function(cam) { %>
-            <div class="cctv-card" id="cctv-card-<%= cam.cameraId %>" data-camera-id="<%= cam.cameraId %>" data-label="<%= cam.label %>" data-room="<%= cam.room %>" data-building="<%= cam.building %>" data-online="<%= cam.online %>">
-              <div class="cctv-viewport">
-                <% if (cam.online) { %>
-                  <div class="cctv-hud-overlay">
-                    <div style="display: flex; align-items: center; gap: 6px; color: #ef4444; font-weight: 700;">
-                      <div class="rec-dot" style="width: 8px; height: 8px; background-color: #ef4444; border-radius: 50%;"></div>
-                      <span>LIVE</span>
-                    </div>
-                    <span><%= cam.cameraId %></span>
-                  </div>
-                  <img class="cctv-frame-img" src="<%= cam.lastFrameUrl || '/uploads/alerts/placeholder_verified_gunshot.svg' %>" alt="<%= cam.label %>">
-                <% } else { %>
-                  <div class="cctv-offline-banner">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="1" y1="1" x2="23" y2="23"></line>
-                      <path d="M21 21l-3.35-3.35M23 7l-7 5 7 5V7z"></path>
-                      <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                    </svg>
-                    <span>FEED OFFLINE</span>
-                  </div>
-                <% } %>
-              </div>
-
-              <div class="cctv-footer-info">
-                <div>
-                  <div class="cctv-title"><%= cam.room %></div>
-                  <div class="cctv-subtitle"><%= cam.building %> (<%= cam.label %>)</div>
-                </div>
-                <div>
-                  <span class="badge <%= cam.online ? 'badge-status-resolved' : 'badge-status-new' %>" style="font-size: 0.7rem;">
-                    <%= cam.online ? 'ONLINE' : 'OFFLINE' %>
-                  </span>
-                </div>
-              </div>
-            </div>
-          <% }); %>
-        <% } %>
-      </div>
-
-      <!-- Enlarge Feed Modal -->
-      <div id="cameraEnlargeModal" class="modal-backdrop">
-        <div class="modal-content" style="max-width: 900px;">
-          <div class="modal-header">
-            <h2 id="enlargeModalTitle" class="modal-title">Live Security Camera Feed</h2>
-            <button id="closeEnlargeModalBtn" class="modal-close-btn">&times;</button>
-          </div>
-          <div class="modal-body">
-            <div class="enlarge-viewport-wrapper">
-              <img id="enlargeModalImg" src="" alt="Enlarged Camera Feed">
-            </div>
-            <div id="enlargeModalInfo" style="font-family: var(--font-mono); font-size: 0.88rem; color: var(--text-secondary);"></div>
-          </div>
-          <div class="modal-footer">
-            <button class="btn btn-outline" onclick="document.getElementById('cameraEnlargeModal').classList.remove('active')">Close</button>
-          </div>
-        </div>
-      </div>
+    <main class="page-body" id="cctvPage" data-admin="<%= user.role === 'admin' %>">
+      <div class="nodes-heading"><div><p class="nodes-eyebrow">CAMPUS SURVEILLANCE</p><h1>CCTV Monitoring Room</h1><p>All security nodes in one view. Select a feed to enlarge it and manage its connection.</p></div><a class="btn btn-primary" href="/security-nodes">Create Security Nodes →</a></div>
+      <div class="cctv-toolbar"><div class="node-filter-group" role="group" aria-label="Filter security nodes"><button class="filter-chip active" data-node-filter="all">All nodes</button><button class="filter-chip" data-node-filter="live">Live</button><button class="filter-chip" data-node-filter="offline">Offline</button></div><span id="cctvSummary" role="status">Checking connections…</span></div>
+      <div id="receiverStatus" class="receiver-status" role="status">Checking model service…</div>
+      <div id="cctvGrid" class="security-cctv-grid"></div>
+      <div id="cctvEmpty" class="nodes-empty" hidden><span class="camera-symbol">◉</span><h2>No security nodes here yet</h2><p>Create a node, enter its pairing code on your phone, and its video will appear here.</p><a href="/security-nodes" class="btn btn-outline">Open Security Nodes</a></div>
+      <%- include('partials/node-dialog') %>
     </main>
-
     <%- include('partials/footer') %>
   </div>
 </div>
-
 <%- include('partials/scripts') %>
