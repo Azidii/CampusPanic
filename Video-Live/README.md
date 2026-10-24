@@ -1,3 +1,24 @@
+# Integrated security nodes (October 24, 2026)
+
+The main Express/EJS website now starts `security_worker.py` automatically.
+Use `npm start` in `../DSP-Website`, create a security node in `/security-nodes`,
+and enter the website-generated code plus `LAPTOP_WIFI_IP:5000` in the existing
+Android app. See `../DSP-Website/README.md` for portable setup, pairing, CCTV
+monitoring and management controls.
+
+The private worker supports multiple named nodes with isolated sessions and
+latest-frame slots, one shared model interpreter, round-robin inference, and
+freshness checks. It binds only to loopback port 5056 and requires the gateway's
+random private service key. Phones use the main website, not this private port.
+Audio remains reserved and disabled. The original standalone test below remains
+available on port 5055; do not use its global code for website-managed nodes.
+
+Verification: thirteen Python checks passed, plus website integration checks
+with two synthetic camera inputs through the actual model. The integrated
+Android-to-website path still needs a real-phone motion/latency check. Earlier
+user confirmation below concerns the standalone Android receiver.
+
+## Standalone test reference and prior milestone
 # Campus Panic: live Android video milestone
 
 Status on October 23, 2026: native Kotlin camera app and laptop receiver are
@@ -5,7 +26,7 @@ implemented. Nine automated Python checks passed with synthetic inputs and the
 supplied model; the APK compiled and its unit tests and lint checks passed.
 The user has confirmed the real Android pipeline works. Full phone-to-screen
 delay has not been benchmarked.
-Website integration is the next milestone.
+The original milestone preceded the integrated website described above.
 No website source files have been changed. Audio is out of scope for this phase.
 
 ## Preferred input: Campus Panic native Android app

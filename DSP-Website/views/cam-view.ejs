@@ -1,163 +1,25 @@
 <%- include('partials/head') %>
-
 <div class="app-container">
   <%- include('partials/sidebar') %>
-
   <div class="main-content">
     <%- include('partials/navbar') %>
-
-    <main class="page-body">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
-        <div>
-          <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Camera Feed &amp; Threat Verification</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Live webcam frame ingestion with automated computer vision firearm detection bounding box overlay</p>
-        </div>
-
-        <div style="display: flex; align-items: center; gap: 12px;">
-          <label for="camNodeSelector" style="font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);">Select Room Node:</label>
-          <select id="camNodeSelector" class="form-select" style="width: auto; min-width: 200px;">
-            <% nodes.forEach(function(n) { %>
-              <option value="<%= n.nodeId %>" <%= selectedNode && selectedNode.nodeId === n.nodeId ? 'selected' : '' %>>
-                <%= n.building %> - <%= n.room %> (<%= n.nodeId %>)
-              </option>
-            <% }); %>
-          </select>
-        </div>
-      </div>
-
-      <!-- Plain Callout Alert when Firearm was NOT verified -->
-      <% if (selectedAlert && selectedAlert.threatStatus === 'unverified_audio_trigger') { %>
-        <div class="firearm-unverified-alert">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <div>
-            <strong>ATTENTION: FIREARM NOT VERIFIED.</strong> Acoustic trigger flagged suspected gunshot audio (Confidence: <%= Math.round((selectedAlert.audioConfidence || 0.88) * 100) %>%), but the security camera computer vision analysis did NOT detect any visible firearm (Confidence: <%= Math.round((selectedAlert.firearmConfidence || 0.08) * 100) %>%)
-          </div>
-        </div>
-      <% } %>
-
-      <div class="cam-view-layout">
-        <!-- Left: Main Video & Vision Viewport -->
-        <div>
-          <div class="viewport-container">
-            <div class="viewport-header-hud">
-              <div class="live-rec-badge">
-                <div class="rec-blink-dot"></div>
-                <span><%= selectedNode ? `${selectedNode.building} - ${selectedNode.room}` : 'CAMERA FEED' %></span>
-              </div>
-              <div>
-                CAMERA ID: <strong><%= selectedNode ? (selectedNode.cameraId || 'CAM-' + selectedNode.nodeId) : 'CAM-LIVE' %></strong>
-              </div>
-            </div>
-
-            <div class="video-frame-wrapper">
-              <% 
-                let frameUrl = '/uploads/alerts/placeholder_verified_gunshot.svg';
-                if (selectedAlert && selectedAlert.imageUrl) {
-                  frameUrl = selectedAlert.imageUrl;
-                } else if (selectedNode && selectedNode.status === 'active') {
-                  frameUrl = '/uploads/alerts/placeholder_verified_gunshot.svg';
-                } else {
-                  frameUrl = '/uploads/alerts/placeholder_manual_alert.svg';
-                }
-              %>
-              <img id="currentCamImage" class="snapshot-element" src="<%= frameUrl %>" alt="Security Camera Frame">
-              <canvas id="detectionCanvas" class="detection-overlay-canvas" data-firearm-conf="<%= selectedAlert ? selectedAlert.firearmConfidence : (selectedNode && selectedNode.status === 'active' ? 0.94 : 0) %>" data-active-camera-id="<%= selectedNode ? selectedNode.cameraId : '' %>"></canvas>
-            </div>
-          </div>
-
-          <!-- Confidence Scores Panel -->
-          <div class="confidence-meters-panel">
-            <div class="confidence-box">
-              <div class="confidence-label">TinyML Acoustic Confidence</div>
-              <div class="meter-track">
-                <% const audioConf = selectedAlert && selectedAlert.audioConfidence !== null ? selectedAlert.audioConfidence : 0.95; %>
-                <div class="meter-fill audio" style="width: <%= Math.round(audioConf * 100) %>%;"></div>
-              </div>
-              <div class="meter-number"><%= Math.round(audioConf * 100) %>%</div>
-            </div>
-
-            <div class="confidence-box">
-              <div class="confidence-label">Computer Vision Firearm Confidence</div>
-              <div class="meter-track">
-                <% 
-                  const firearmConf = selectedAlert && selectedAlert.firearmConfidence !== null ? selectedAlert.firearmConfidence : (selectedAlert && selectedAlert.threatStatus === 'verified_threat' ? 0.94 : 0.08); 
-                  const isVerified = firearmConf > 0.5;
-                %>
-                <div class="meter-fill <%= isVerified ? 'verified' : 'unverified' %>" style="width: <%= Math.round(firearmConf * 100) %>%;"></div>
-              </div>
-              <div class="meter-number" style="color: <%= isVerified ? 'var(--threat-verified)' : '#f97316' %>;">
-                <%= Math.round(firearmConf * 100) %>% <%= isVerified ? '[VERIFIED]' : '[NEGATIVE]' %>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Telemetry & Snapshot History Sidebar -->
-        <div class="cam-sidebar-panel">
-          <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Node Telemetry</h2>
-            </div>
-            <% if (selectedNode) { %>
-              <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.88rem;">
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Node ID:</span>
-                  <span style="font-family: var(--font-mono); font-weight: 700;"><%= selectedNode.nodeId %></span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Building:</span>
-                  <span style="font-weight: 600;"><%= selectedNode.building %></span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Room:</span>
-                  <span style="font-weight: 600;"><%= selectedNode.room %></span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Hardware Status:</span>
-                  <span style="text-transform: uppercase; font-weight: 700; color: <%= selectedNode.status === 'active' ? 'var(--threat-verified)' : (selectedNode.status === 'online' ? 'var(--status-online)' : 'var(--status-offline)') %>;">
-                    <%= selectedNode.status %>
-                  </span>
-                </div>
-                <div style="display: flex; justify-content: space-between;">
-                  <span style="color: var(--text-muted);">Coordinates:</span>
-                  <span style="font-family: var(--font-mono); font-size: 0.8rem;"><%= selectedNode.lat.toFixed(4) %>, <%= selectedNode.lng.toFixed(4) %></span>
-                </div>
-              </div>
-            <% } %>
-          </div>
-
-          <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Triggered Snapshots</h2>
-            </div>
-            <div class="history-strip">
-              <% if (latestAlerts && latestAlerts.length > 0) { %>
-                <% latestAlerts.forEach(function(item) { %>
-                  <a href="/cam-view?nodeId=<%= item.nodeId %>&alertId=<%= item._id %>" class="history-item <%= selectedAlert && selectedAlert._id.toString() === item._id.toString() ? 'active' : '' %>">
-                    <img class="history-thumb" src="<%= item.imageUrl %>" alt="Alert snapshot">
-                    <div style="flex: 1; min-width: 0;">
-                      <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary);"><%= item.room %></div>
-                      <div style="font-size: 0.75rem; color: var(--text-muted);"><%= new Date(item.timestamp).toLocaleTimeString() %> &bull; <%= item.emergencyType %></div>
-                    </div>
-                  </a>
-                <% }); %>
-              <% } else { %>
-                <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px 0;">
-                  No archived incident frames.
-                </div>
-              <% } %>
-            </div>
-          </div>
-        </div>
-      </div>
+    <main class="page-body" id="singleNodePage" data-node-id="<%= selectedNode ? selectedNode.nodeId : '' %>">
+      <div class="nodes-heading"><div><p class="nodes-eyebrow">CAMERA &amp; INCIDENT REVIEW</p><h1>Camera Feed &amp; Threat Verification</h1><p>Live detection results come directly from the laptop model.</p></div><a href="/cameras" class="btn btn-outline">All Cameras →</a></div>
+      <div id="receiverStatus" class="receiver-status" role="status">Checking model service…</div>
+      <div class="nodes-setup-layout"><section>
+        <div class="node-viewport setup-preview" id="singlePreview"><img hidden alt="Live node model output"><div class="node-idle"><span class="camera-symbol">◉</span><strong>Camera is currently inactive</strong><span>Select a node or connect its phone.</span></div><span class="node-muted">🔇 Audio not configured</span></div>
+        <dl id="singleLiveDetails" class="node-live-details"></dl>
+        <% if (selectedNode) { %><button type="button" class="btn btn-outline" id="manageSelectedNode">Enlarge / Manage Node</button><% } %>
+      </section><section class="card node-create-panel"><h2>Security node</h2><label class="form-label" for="camNodeSelector">Choose a feed</label><select class="form-select" id="camNodeSelector"><option value="">Select a node</option><% nodes.forEach(function(n) { %><option value="<%= n.nodeId %>" <%= selectedNode && selectedNode.nodeId === n.nodeId ? 'selected' : '' %>><%= n.name || n.nodeId %> — <%= n.building %>, <%= n.room %></option><% }); %></select>
+        <% if (selectedAlert) { %><div class="node-connection-controls"><h3>Recorded incident</h3><p><%= selectedAlert.emergencyType %> · <%= selectedAlert.threatStatus.replace(/_/g, ' ') %></p><p class="nodes-hint"><%= new Date(selectedAlert.timestamp).toLocaleString() %> · <%= selectedAlert.building %>, <%= selectedAlert.room %></p>
+          <% if (selectedAlert.imageUrl) { %><img class="incident-snapshot" src="<%= selectedAlert.imageUrl %>" alt="Recorded incident snapshot"><% } %>
+          <p>Vision confidence: <%= selectedAlert.firearmConfidence == null ? 'Unavailable' : Math.round(selectedAlert.firearmConfidence * 100) + '%' %></p><p>Audio confidence: <%= selectedAlert.audioConfidence == null ? 'Unavailable' : Math.round(selectedAlert.audioConfidence * 100) + '%' %></p>
+        </div><% } %>
+        <div class="node-connection-controls"><h3>Incident snapshots</h3><% latestAlerts.forEach(function(item) { %><a class="incident-link" href="/cam-view?alertId=<%= item._id %>"><%= item.room %> · <%= new Date(item.timestamp).toLocaleString() %></a><% }); %><% if (!latestAlerts.length) { %><p class="nodes-hint">No saved incident snapshots.</p><% } %></div>
+      </section></div>
+      <%- include('partials/node-dialog') %>
     </main>
-
     <%- include('partials/footer') %>
   </div>
 </div>
-
 <%- include('partials/scripts') %>

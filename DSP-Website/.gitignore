@@ -21,8 +21,9 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Server uploads
-server/uploads/alerts/*
-!server/uploads/alerts/.gitkeep
+uploads/alerts/*
+!uploads/alerts/.gitkeep
+!uploads/alerts/placeholder_*.svg
 
 # IDE and OS
 .vscode/

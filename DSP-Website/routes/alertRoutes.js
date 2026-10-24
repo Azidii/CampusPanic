@@ -6,7 +6,6 @@ import { requireAuth } from '../middleware/auth.js';
 import { requireDeviceApiKey } from '../middleware/deviceAuth.js';
 import { uploadAlertImage, saveBase64Image } from '../middleware/upload.js';
 import { verifyChecksum } from '../utils/checksum.js';
-import { getSocketIO } from '../sockets/socketHandler.js';
 
 const router = express.Router();
 
@@ -138,13 +137,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       );
     }
 
-    const io = getSocketIO();
-    if (io) {
-      io.emit('alert:updated', alert);
-      if (unresolvedCount === 0) {
-        io.emit('node:status', { nodeId: alert.nodeId, status: 'online' });
-      }
-    }
+
 
     return res.status(200).json({
       success: true,
@@ -284,11 +277,7 @@ router.post(
         { upsert: false }
       );
 
-      const io = getSocketIO();
-      if (io) {
-        io.emit('alert:new', alert);
-        io.emit('node:status', { nodeId: alert.nodeId, status: 'active' });
-      }
+
 
       return res.status(201).json({
         ack: true,

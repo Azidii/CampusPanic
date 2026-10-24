@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const badgeContainer = card.querySelector('.status-badge-wrap');
     if (badgeContainer) {
       if (alert.status === 'acknowledged') {
-        badgeContainer.innerHTML = `<span class="badge badge-status-ack">ACKNOWLEDGED BY ${alert.acknowledgedBy || 'OPERATOR'}</span>`;
+        badgeContainer.innerHTML = `<span class="badge badge-status-ack">ACKNOWLEDGED BY ${window.escapeHtml(alert.acknowledgedBy || 'OPERATOR')}</span>`;
       } else if (alert.status === 'resolved') {
         badgeContainer.innerHTML = `<span class="badge badge-status-resolved">RESOLVED</span>`;
       }
@@ -123,37 +123,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 3. Realtime Socket.IO Listeners
-  if (window.appSocket) {
-    window.appSocket.on('alert:new', (newAlert) => {
-      console.log('[Realtime] New alert received:', newAlert);
-
-      // Trigger siren sound for critical verified threats
-      if (newAlert.threatStatus === 'verified_threat') {
-        if (window.alarmSound) {
-          window.alarmSound.playAlarm(3500);
-        }
-        window.showToast(`CRITICAL: Verified Threat detected at ${newAlert.building} - ${newAlert.room}!`, 'error', 8000);
-      } else {
-        window.showToast(`New ${newAlert.emergencyType.toUpperCase()} alert from ${newAlert.nodeId}`, 'warning');
+  // Snapshot reconciliation keeps filters and action controls in place.
+  let initialized = false;
+  const seen = new Set([...document.querySelectorAll('.alert-card')].map(card => card.id.replace('alert-card-', '')));
+  window.addEventListener('campus:state', ({ detail }) => {
+    const ids = new Set(detail.alerts.map(alert => alert._id));
+    document.querySelectorAll('.alert-card').forEach(card => {
+      if (!ids.has(card.id.replace('alert-card-', ''))) card.remove();
+    });
+    for (const alert of [...detail.alerts].reverse()) {
+      if (!document.getElementById(`alert-card-${alert._id}`)) renderNewAlertCard(alert);
+      updateCardUI(alert);
+      if (initialized && !seen.has(alert._id)) {
+        window.showToast(`New ${alert.emergencyType} alert at ${alert.building} - ${alert.room}`, 'warning');
+        if (alert.threatStatus === 'verified_threat') window.alarmSound?.playAlarm(3500);
       }
+      seen.add(alert._id);
+    }
+    initialized = true;
+    for (const [type, count] of Object.entries(detail.counts)) {
+      const element = document.getElementById(`count-${type}`);
+      if (element) element.textContent = count;
+    }
+    const active = document.getElementById('count-active-nodes');
+    if (active) active.textContent = `${detail.nodes.filter(n => n.video?.cameraConnected || (!n.videoEnabled && n.status !== 'offline')).length} / ${detail.nodes.length}`;
+    const latest = detail.alerts.find(a => a.threatStatus === 'verified_threat' && a.status !== 'resolved');
+    let banner = document.querySelector('.latest-threat-banner');
+    if (!latest) banner?.remove();
+    else {
+      if (!banner) {
+        banner = document.createElement('div'); banner.className = 'latest-threat-banner';
+        document.querySelector('.stats-grid')?.after(banner);
+      }
+      banner.innerHTML = `<div><strong>CRITICAL THREAT: ${window.escapeHtml(latest.room)}</strong><div>${window.escapeHtml(latest.building)}</div></div><a class="btn btn-danger" href="/cam-view?alertId=${encodeURIComponent(latest._id)}">Open Verification Cam →</a>`;
+    }
+    applyFilters();
+  });
 
-      // Prepend card to top of list
-      renderNewAlertCard(newAlert);
-      updateStatsOnNewAlert(newAlert);
-      applyFilters();
-    });
-
-    window.appSocket.on('alert:updated', (updatedAlert) => {
-      updateCardUI(updatedAlert);
-    });
-
-    window.appSocket.on('node:status', (data) => {
-      console.log('[Realtime] Node status updated:', data);
-    });
-  }
-
-  function renderNewAlertCard(a) {
+  function renderNewAlertCard(raw) {
+    const a = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, typeof value === 'string' ? window.escapeHtml(value) : value]));
     if (!alertList) return;
 
     const card = document.createElement('div');

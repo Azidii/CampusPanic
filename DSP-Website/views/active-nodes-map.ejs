@@ -30,7 +30,7 @@
         <div class="threat-sidebar-list">
           <div class="card" style="padding: 14px; background: rgba(239, 68, 68, 0.06); border-color: rgba(239, 68, 68, 0.3);">
             <div style="font-size: 0.82rem; font-weight: 800; color: #f87171; text-transform: uppercase; margin-bottom: 4px;">
-              Active Incident Hotspots: <%= activeNodes.length %>
+              <span id="hotspotCount">Active Incident Hotspots: <%= activeNodes.length %></span>
             </div>
             <div style="font-size: 0.78rem; color: var(--text-muted);">
               Color-coded by emergency type with automated verification telemetry.
@@ -73,7 +73,7 @@
 
       <!-- Injected Data Payload -->
       <script id="activeNodesData" type="application/json">
-        <%- JSON.stringify({ activeNodes, activeAlerts }) %>
+        <%- JSON.stringify({ activeNodes, activeAlerts }).replace(/</g, '\\u003c') %>
       </script>
     </main>
 

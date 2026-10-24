@@ -1,60 +1,32 @@
-/**
- * Campus Map View Controller - map-view.js
- * Interactive Leaflet Map for Campus Nodes & Sensor Telemetry
- */
-
 document.addEventListener('DOMContentLoaded', () => {
-  const mapEl = document.getElementById('campusMap');
-  if (!mapEl || typeof L === 'undefined') return;
-
-  const campusCenter = [14.5995, 120.9842];
-  const map = L.map('campusMap').setView(campusCenter, 17);
-
-  // CartoDB Dark Matter tile layer
+  const element = document.getElementById('campusMap');
+  if (!element || typeof L === 'undefined') return;
+  const map = L.map(element).setView([14.5995, 120.9842], 17);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 20
+    attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20
   }).addTo(map);
-
-  // Read nodes serialized in DOM
-  const nodesScript = document.getElementById('nodesData');
-  let nodes = [];
-  if (nodesScript) {
-    try {
-      nodes = JSON.parse(nodesScript.textContent);
-    } catch (e) {
-      console.error('Failed to parse nodes data:', e);
+  const group = L.featureGroup().addTo(map);
+  let fitted = false;
+  function render(nodes) {
+    group.clearLayers();
+    for (const node of nodes) {
+      if (!Number.isFinite(node.lat) || !Number.isFinite(node.lng)) continue;
+      const color = node.status === 'active' ? '#ef4444' : node.status === 'offline' ? '#64748b' : '#10b981';
+      const marker = L.circleMarker([node.lat, node.lng], { radius: 10, fillColor: color,
+        color: '#ffffff', weight: 2, fillOpacity: .9 }).addTo(group);
+      const popup = document.createElement('div');
+      const title = document.createElement('strong'); title.textContent = node.name || node.room;
+      const location = document.createElement('p'); location.textContent = `${node.building}, ${node.room} · ${node.status}`;
+      const link = document.createElement('a'); link.className = 'btn btn-sm btn-primary';
+      link.href = `/cam-view?nodeId=${encodeURIComponent(node.nodeId)}`; link.textContent = 'View node camera →';
+      popup.append(title, location, link); marker.bindPopup(popup);
     }
+    if (!fitted && group.getLayers().length) { map.fitBounds(group.getBounds().pad(.3), { maxZoom: 17 }); fitted = true; }
+    const chips = document.querySelectorAll('.legend-chip span');
+    ['online', 'active', 'offline'].forEach((status, index) => {
+      if (chips[index]) chips[index].textContent = `${status === 'active' ? 'Active Threat' : status === 'online' ? 'Online' : 'Offline'} (${nodes.filter(n => n.status === status).length})`;
+    });
   }
-
-  nodes.forEach((node) => {
-    let pinColor = '#10b981'; // online
-    if (node.status === 'active') pinColor = '#ef4444'; // active alert
-    else if (node.status === 'offline') pinColor = '#64748b'; // offline
-
-    const marker = L.circleMarker([node.lat, node.lng], {
-      radius: 10,
-      fillColor: pinColor,
-      color: '#ffffff',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.9
-    }).addTo(map);
-
-    const popupHtml = `
-      <div class="node-popup-content">
-        <div class="popup-node-title">${node.room}</div>
-        <div class="popup-node-subtitle">${node.building} (${node.nodeId})</div>
-        <div style="font-size: 0.78rem; font-family: monospace; margin-bottom: 8px;">
-          STATUS: <strong style="color: ${pinColor}; text-transform: uppercase;">${node.status}</strong>
-        </div>
-        <a href="/cam-view?nodeId=${encodeURIComponent(node.nodeId)}" class="btn btn-sm btn-primary popup-btn">
-          View Room Camera &rarr;
-        </a>
-      </div>
-    `;
-
-    marker.bindPopup(popupHtml);
-  });
+  render(JSON.parse(document.getElementById('nodesData').textContent));
+  window.addEventListener('campus:state', ({ detail }) => render(detail.nodes));
 });

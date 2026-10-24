@@ -24,7 +24,7 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
-  const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
+  const statusCode = err.statusCode || (res.statusCode >= 400 ? res.statusCode : 500);
   
   if (req.accepts('html') && !req.path.startsWith('/api/')) {
     return res.status(statusCode).render('404', {

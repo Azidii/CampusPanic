@@ -2,6 +2,7 @@
 import argparse
 import ipaddress
 import logging
+import os
 import secrets
 import socket
 import threading
@@ -19,7 +20,9 @@ from waitress import serve
 from detector import Detector, annotate
 
 ROOT = Path(__file__).resolve().parent
-DEFAULT_MODEL = Path.home() / 'Desktop/CampusPanic_plan/TFlite/gun_model.tflite'
+PORTABLE_MODEL = ROOT.parent / 'models/gun_model.tflite'
+DEFAULT_MODEL = Path(os.environ.get('VIDEO_MODEL_PATH') or (
+    PORTABLE_MODEL if PORTABLE_MODEL.is_file() else Path.home() / 'Desktop/CampusPanic_plan/TFlite/gun_model.tflite'))
 LOG = logging.getLogger('campuspanic.video')
 
 

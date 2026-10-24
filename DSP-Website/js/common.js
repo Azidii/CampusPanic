@@ -1,6 +1,6 @@
 /**
  * CampusPanic Common Client Script - common.js
- * Theme Controller, Sound Synthesizer, Toast Notifications & Socket.IO
+ * Theme Controller, Sound Synthesizer, Toast Notifications & HTTP Updates
  */
 
 // 1. Theme Controller
@@ -88,11 +88,12 @@ window.showToast = function (message, type = 'info', duration = 4000) {
   toast.innerHTML = `
     <div style="flex: 1;">
       <div style="font-weight: 700; margin-bottom: 2px;">${type === 'error' ? 'ALERT' : type === 'success' ? 'SYSTEM' : 'NOTICE'}</div>
-      <div>${message}</div>
+      <div class="toast-message"></div>
     </div>
     <button onclick="this.parentElement.remove()" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem;">&times;</button>
   `;
 
+  toast.querySelector('.toast-message').textContent = message;
   container.appendChild(toast);
 
   setTimeout(() => {
@@ -103,19 +104,28 @@ window.showToast = function (message, type = 'info', duration = 4000) {
   }, duration);
 };
 
-// 4. Socket.IO Global Client
-let socket = null;
-if (typeof io !== 'undefined') {
-  socket = io();
-  socket.on('connect', () => {
-    console.log('[Realtime] Connected to CampusPanic Security Gateway:', socket.id);
-  });
-
-  socket.on('disconnect', () => {
-    console.log('[Realtime] Disconnected from Security Gateway');
-  });
-}
-window.appSocket = socket;
+// HTTP snapshots replace the former real-time transport.
+window.escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+window.refreshCampus = async function () {
+  if (window.campusRefreshing || document.hidden || document.body.classList.contains('page-login')) return;
+  window.campusRefreshing = true;
+  try {
+    const response = await fetch('/api/live', { cache: 'no-store', signal: AbortSignal.timeout(8000) });
+    if (response.status === 401 || response.status === 403) { window.location.href = '/login'; return; }
+    if (!response.ok) throw new Error('Update unavailable');
+    window.campusState = await response.json();
+    window.dispatchEvent(new CustomEvent('campus:state', { detail: window.campusState }));
+  } catch {
+    window.dispatchEvent(new CustomEvent('campus:offline'));
+  } finally { window.campusRefreshing = false; }
+};
+document.addEventListener('DOMContentLoaded', () => {
+  window.refreshCampus();
+  setInterval(window.refreshCampus, 2000);
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) window.refreshCampus(); });
 
 // 5. Live Clock Updater & Mobile Drawer
 document.addEventListener('DOMContentLoaded', () => {

@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 
 const nodeSchema = new mongoose.Schema(
   {
+    name: { type: String, trim: true, maxlength: 100, default: '' },
+    videoEnabled: { type: Boolean, default: false },
+    pairingHash: { type: String, select: false },
+    pairingExpiresAt: { type: Date, default: null },
     nodeId: {
       type: String,
       required: [true, 'nodeId is required'],
@@ -21,20 +25,20 @@ const nodeSchema = new mongoose.Schema(
     },
     lat: {
       type: Number,
-      required: [true, 'latitude is required']
+      default: null
     },
     lng: {
       type: Number,
-      required: [true, 'longitude is required']
+      default: null
     },
     status: {
       type: String,
       enum: ['online', 'offline', 'active'],
-      default: 'online'
+      default: 'offline'
     },
     lastSeen: {
       type: Date,
-      default: Date.now
+      default: null
     },
     cameraId: {
       type: String,
@@ -49,5 +53,6 @@ const nodeSchema = new mongoose.Schema(
 
 nodeSchema.index({ building: 1, room: 1 });
 nodeSchema.index({ status: 1 });
+nodeSchema.index({ pairingHash: 1 }, { unique: true, sparse: true });
 
 export const Node = mongoose.model('Node', nodeSchema);

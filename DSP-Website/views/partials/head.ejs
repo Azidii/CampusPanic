@@ -20,6 +20,9 @@
   <!-- Core Common Design System CSS -->
   <link rel="stylesheet" href="/css/common.css">
 
+  <% if (['all-cams', 'security-nodes', 'cam-view'].includes(page)) { %>
+    <link rel="stylesheet" href="/css/security-nodes.css">
+  <% } %>
   <!-- Dedicated Page-Specific CSS -->
   <% if (page) { %>
     <link rel="stylesheet" href="/css/<%= page %>.css">

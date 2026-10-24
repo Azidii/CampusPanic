@@ -67,7 +67,15 @@ class UploadInferenceCheck(unittest.TestCase):
             headers = {**AUTH, 'X-Camera-Session': session}
             response = client.post('/api/camera/frame', headers=headers, data=image.tobytes(), content_type='image/jpeg')
             self.assertEqual(response.status_code, 202)
-            self.assertTrue(wait_until(lambda: pipeline.snapshot()[0]['live']))
+            # Model cold start can exceed this test's short stale window. Keep
+            # sending fresh frames, as the real app does, rather than timing
+            # model initialization against a single upload's expiry.
+            def feed_until_live():
+                upload = client.post('/api/camera/frame', headers=headers,
+                                     data=image.tobytes(), content_type='image/jpeg')
+                self.assertEqual(upload.status_code, 202)
+                return pipeline.snapshot()[0]['live']
+            self.assertTrue(wait_until(feed_until_live))
             data = client.get('/api/status').get_json()
             self.assertEqual(data['inputMode'], 'android-app')
             self.assertEqual((data['width'], data['height']), (640, 480))
@@ -78,9 +86,10 @@ class UploadInferenceCheck(unittest.TestCase):
             self.assertEqual(client.post('/api/camera/frame', headers=headers,
                                          data=image.tobytes(), content_type='image/jpeg').status_code, 409)
             new_session = client.post('/api/camera/connect', headers=AUTH).get_json()['sessionId']
-            client.post('/api/camera/frame', headers={**AUTH, 'X-Camera-Session': new_session},
+            headers = {**AUTH, 'X-Camera-Session': new_session}
+            client.post('/api/camera/frame', headers=headers,
                         data=image.tobytes(), content_type='image/jpeg')
-            self.assertTrue(wait_until(lambda: pipeline.snapshot()[0]['live']))
+            self.assertTrue(wait_until(feed_until_live))
         finally:
             pipeline.stop()
 
