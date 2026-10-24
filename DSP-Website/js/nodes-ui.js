@@ -278,7 +278,15 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('campus:state', ({ detail }) => {
     nodes = detail.nodes; receiver = detail.receiver;
     const banner = document.getElementById('receiverStatus');
-    if (banner) { banner.textContent = receiver.ready ? '● Model service ready · Live video is silent · Audio not configured' : receiver.message; banner.dataset.ready = receiver.ready; }
+    if (banner) {
+      if (receiver.ready) {
+        banner.innerHTML = '<span class="receiver-dot-live">●</span> Model service ready · Live video is silent · Audio not configured';
+      } else {
+        const safeMsg = escape(receiver.message || 'Model service unavailable');
+        banner.innerHTML = '<span class="receiver-warn-icon">⚠</span> ' + safeMsg.replace(/\b(VIDEO_PYTHON|VIDEO_MODEL_PATH)\b/g, '<code>$1</code>');
+      }
+      banner.dataset.ready = receiver.ready;
+    }
     renderGrid(); renderList(); renderDialog();
     if (createdNodeId && nodes.some(node => node.nodeId === createdNodeId)) {
       openNode(createdNodeId, createdNodePairing?.pairing, createdNodePairing?.addresses);
@@ -297,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function offline() {
     document.querySelectorAll('.node-viewport').forEach(stopPreview);
     const banner = document.getElementById('receiverStatus');
-    if (banner) { banner.textContent = 'Connection interrupted. Waiting for the laptop website…'; banner.dataset.ready = false; }
+    if (banner) { banner.innerHTML = '<span class="receiver-warn-icon">⚠</span> Connection interrupted. Waiting for the laptop website…'; banner.dataset.ready = false; }
   }
   window.addEventListener('campus:offline', offline);
   document.addEventListener('visibilitychange', () => { if (document.hidden) document.querySelectorAll('.node-viewport').forEach(stopPreview); });

@@ -9,25 +9,25 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: radial-gradient(circle at 50% 20%, #151d30 0%, #0a0d14 70%);
+  background-color: var(--bg-primary);
   position: relative;
   overflow: hidden;
 }
 
 .login-bg-radar {
   position: absolute;
-  width: 600px;
-  height: 600px;
+  width: 580px;
+  height: 580px;
   border-radius: 50%;
-  border: 1px solid rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.08);
   pointer-events: none;
-  animation: radarSpin 20s linear infinite;
+  animation: radarSpin 24s linear infinite;
 }
 
 .login-bg-radar::before {
   content: '';
   position: absolute;
-  inset: 50px;
+  inset: 48px;
   border-radius: 50%;
   border: 1px solid rgba(239, 68, 68, 0.06);
 }
@@ -37,7 +37,7 @@
   position: absolute;
   inset: 120px;
   border-radius: 50%;
-  border: 1px dashed rgba(59, 130, 246, 0.12);
+  border: 1px dashed rgba(2, 132, 199, 0.1);
 }
 
 @keyframes radarSpin {
@@ -47,39 +47,39 @@
 
 .login-card {
   width: 100%;
-  max-width: 440px;
-  background-color: rgba(16, 21, 34, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 36px 32px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(59, 130, 246, 0.08);
+  max-width: 420px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 32px 28px;
+  box-shadow: var(--shadow-pop);
   position: relative;
   z-index: 10;
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .login-header .brand-icon {
-  margin: 0 auto 16px;
-  width: 48px;
-  height: 48px;
-  font-size: 1.4rem;
+  margin: 0 auto 14px;
+  width: 44px;
+  height: 44px;
+  font-size: 1.3rem;
+  border-radius: var(--radius-xs);
 }
 
 .login-title {
-  font-size: 1.45rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .login-subtitle {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
@@ -87,19 +87,19 @@
   background-color: var(--threat-verified-bg);
   border: 1px solid var(--threat-verified-border);
   color: #fca5a5;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
-  margin-bottom: 20px;
+  padding: 10px 12px;
+  border-radius: var(--radius-xs);
+  font-size: 0.82rem;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .login-submit-btn {
   width: 100%;
-  padding: 12px;
-  font-size: 0.95rem;
+  padding: 11px;
+  font-size: 0.9rem;
   font-weight: 700;
-  margin-top: 10px;
+  margin-top: 8px;
 }

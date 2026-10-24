@@ -5,8 +5,8 @@
 
 .profile-grid {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 24px;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
 }
 
 @media (max-width: 900px) {
@@ -20,51 +20,52 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 20px 0;
+  padding: 16px 0;
   border-bottom: 1px solid var(--border-subtle);
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .profile-avatar-large {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-strong);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  color: white;
-  margin-bottom: 16px;
-  box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+  color: #38bdf8;
+  margin-bottom: 12px;
 }
 
 .profile-user-name {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
+  letter-spacing: -0.015em;
 }
 
 .profile-user-email {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .profile-meta-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .profile-meta-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .meta-label {
@@ -74,10 +75,12 @@
 .meta-value {
   color: var(--text-primary);
   font-weight: 600;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .profile-sections-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }

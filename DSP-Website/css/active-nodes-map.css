@@ -1,6 +1,6 @@
 /* =========================================================
    Active Threats Map View Styles - active-nodes-map.css
-   Dynamic Emergency Response Hotspots & Pulsing Radar
+   Dynamic Emergency Response Hotspots & Geospatial Radar
    ========================================================= */
 
 .threat-map-layout {
@@ -16,98 +16,98 @@
 }
 
 .threat-map-wrapper {
-  height: 650px;
+  height: 640px;
   width: 100%;
-  border-radius: var(--radius-md);
-  border: 2px solid var(--threat-verified);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--threat-verified);
   overflow: hidden;
   position: relative;
-  box-shadow: var(--shadow-glow-red);
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.18);
 }
 
 #activeThreatMap {
   width: 100%;
   height: 100%;
-  background-color: #070a12;
+  background-color: #060911;
 }
 
-/* Pulsing Leaflet Halos */
+/* Pulsing Leaflet Pins */
 .threat-pulse-pin {
-  width: 24px;
-  height: 24px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  border: 3px solid #ffffff;
+  border: 2px solid #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .pin-gunshot-verified {
-  background-color: #ef4444;
-  box-shadow: 0 0 20px #ef4444;
-  animation: pulseGunshot 1.4s infinite ease-out;
+  background-color: var(--threat-verified);
+  box-shadow: 0 0 12px var(--threat-verified);
+  animation: pulseGunshot 1.5s infinite ease-out;
 }
 
 @keyframes pulseGunshot {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9); transform: scale(0.9); }
-  70% { box-shadow: 0 0 0 22px rgba(239, 68, 68, 0); transform: scale(1.15); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); transform: scale(0.9); }
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8); }
+  70% { box-shadow: 0 0 0 16px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 .pin-unverified-audio {
-  background-color: #f97316;
-  box-shadow: 0 0 16px #f97316;
+  background-color: var(--threat-unverified);
+  box-shadow: 0 0 12px var(--threat-unverified);
   animation: pulseAudio 1.8s infinite ease-out;
 }
 
 @keyframes pulseAudio {
-  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.9); transform: scale(0.9); }
-  70% { box-shadow: 0 0 0 18px rgba(249, 115, 22, 0); transform: scale(1.1); }
-  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); transform: scale(0.9); }
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.8); }
+  70% { box-shadow: 0 0 0 14px rgba(249, 115, 22, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
 }
 
 .pin-medical {
-  background-color: #3b82f6;
-  box-shadow: 0 0 16px #3b82f6;
+  background-color: #0284c7;
+  box-shadow: 0 0 12px #0284c7;
   animation: pulseMedical 1.8s infinite ease-out;
 }
 
 @keyframes pulseMedical {
-  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.9); }
-  70% { box-shadow: 0 0 0 16px rgba(59, 130, 246, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.8); }
+  70% { box-shadow: 0 0 0 14px rgba(2, 132, 199, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(2, 132, 199, 0); }
 }
 
 .pin-fire {
-  background-color: #f59e0b;
-  box-shadow: 0 0 16px #f59e0b;
+  background-color: #d97706;
+  box-shadow: 0 0 12px #d97706;
   animation: pulseFire 1.8s infinite ease-out;
 }
 
 @keyframes pulseFire {
-  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.9); }
-  70% { box-shadow: 0 0 0 16px rgba(245, 158, 11, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.8); }
+  70% { box-shadow: 0 0 0 14px rgba(217, 119, 6, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0); }
 }
 
 .pin-panic {
-  background-color: #a855f7;
-  box-shadow: 0 0 16px #a855f7;
+  background-color: var(--type-panic);
+  box-shadow: 0 0 12px var(--type-panic);
   animation: pulsePanic 1.8s infinite ease-out;
 }
 
 @keyframes pulsePanic {
-  0% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.9); }
-  70% { box-shadow: 0 0 0 16px rgba(168, 85, 247, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(219, 39, 119, 0.8); }
+  70% { box-shadow: 0 0 0 14px rgba(219, 39, 119, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(219, 39, 119, 0); }
 }
 
 /* Threat Sidebar Feed */
 .threat-sidebar-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 650px;
+  gap: 10px;
+  max-height: 640px;
   overflow-y: auto;
 }
 
@@ -116,21 +116,25 @@
   border: 1px solid var(--border-subtle);
   border-left: 4px solid var(--threat-verified);
   border-radius: var(--radius-sm);
-  padding: 14px;
+  padding: 12px 14px;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--transition-fast), var(--transition-press);
 }
 
 .threat-hotspot-card:hover {
   background-color: var(--bg-surface-hover);
-  border-color: #ef4444;
+  border-color: var(--border-strong);
+}
+
+.threat-hotspot-card:active {
+  transform: scale(0.98);
 }
 
 .threat-snapshot-thumb {
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: 4px;
+  border-radius: var(--radius-xs);
   object-fit: cover;
-  margin-top: 10px;
+  margin-top: 8px;
   border: 1px solid var(--border-subtle);
 }
