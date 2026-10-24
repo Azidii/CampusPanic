@@ -1,8 +1,39 @@
 <footer class="app-footer">
-  <div>
-    <strong>CampusPanic SOC Platform</strong> &bull; Acoustic &amp; Computer Vision Emergency Gateway
+  <div class="footer-left">
+    <span class="footer-status-pill">
+      <span class="footer-dot-green"></span>
+      <span class="footer-mono-label">SOC CORE ACTIVE</span>
+    </span>
+    <span class="footer-divider">|</span>
+    <span class="footer-brand">CampusPanic SOC Platform</span>
+    <span class="footer-dot">&bull;</span>
+    <span class="footer-sub">Acoustic &amp; Computer Vision Emergency Gateway</span>
   </div>
-  <div>
-    Compliant with Data Privacy Act &bull; Configured image retention active
+
+  <div class="footer-right">
+    <span class="footer-meta-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+        <line x1="6" y1="6" x2="6.01" y2="6"></line>
+        <line x1="6" y1="18" x2="6.01" y2="18"></line>
+      </svg>
+      <span class="footer-meta-mono" id="footerActiveNodes"><%= typeof activeNodesCount !== 'undefined' ? activeNodesCount : 0 %> NODES CONNECTED</span>
+    </span>
+    <span class="footer-divider">|</span>
+    <span class="footer-meta-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+      </svg>
+      <span class="footer-meta-mono">LATENCY: <strong id="footerLatencyVal">12ms</strong></span>
+    </span>
+    <span class="footer-divider">|</span>
+    <span class="footer-meta-item" title="AES-256 GCM Encrypted Node Stream & Data Privacy Act Compliant">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+      </svg>
+      <span class="footer-meta-mono">SECURE (DPA-2012 COMPLIANT)</span>
+    </span>
   </div>
 </footer>

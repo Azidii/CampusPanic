@@ -2,7 +2,7 @@
   <div class="nav-left">
     <button class="nav-mobile-toggle" id="mobileNavToggle" aria-label="Toggle navigation menu">&#9776;</button>
 
-    <!-- Contextual SOC Telemetry & Breadcrumb (Replaces duplicate brand badge) -->
+    <!-- Contextual SOC Telemetry & Breadcrumb -->
     <div class="soc-breadcrumbs" aria-label="Current security sector">
       <span class="soc-category">
         <% if (page === 'security-nodes') { %>GATEWAY TOOLS
@@ -27,37 +27,40 @@
     </div>
 
     <div class="system-status-indicator">
-      <div class="pulse-dot-green"></div>
-      <span>SOC LIVE</span>
+      <span class="pulse-ring-container">
+        <span class="pulse-ring-ping"></span>
+        <span class="pulse-ring-core"></span>
+      </span>
+      <span class="status-indicator-text">SOC LIVE</span>
     </div>
   </div>
 
   <div class="nav-right">
-    <div class="soc-live-clock font-mono" id="liveClock" title="SOC System Time">
-      --:--:--
+    <!-- Live Tactical Monospace Clock Pod with LOCAL Micro-label -->
+    <div class="soc-live-clock-pod" title="SOC Tactical Reference Clock">
+      <span class="soc-clock-label">LOCAL</span>
+      <span class="soc-live-clock font-mono" id="liveClock">--:--:--</span>
     </div>
 
-    <!-- Quick Alarm Test / Toggle -->
-    <button class="btn btn-sm btn-outline" id="quickAlarmToggleBtn" title="Test Alert Siren" onclick="if(window.alarmSound) window.alarmSound.playAlarm(2000);">
+    <!-- Hardware-Style Audio Siren Toggle -->
+    <button class="hardware-siren-btn" id="quickAlarmToggleBtn" title="Test Audio Siren Relay" onclick="if(window.alarmSound) window.alarmSound.playAlarm(2000);">
+      <span class="siren-led-dot"></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
       </svg>
-      <span>Audio Siren</span>
+      <span class="siren-btn-text">SIREN</span>
+      <span class="siren-state-pill">ARMED</span>
     </button>
 
     <% if (user) { %>
-      <div class="user-snippet" style="margin-left: 8px;">
-        <div class="user-avatar">
-          <%= user.name ? user.name.charAt(0).toUpperCase() : 'O' %>
-        </div>
-        <div class="user-info-text" style="display: none; @media(min-width: 600px){display: block;}">
-          <div class="user-name"><%= user.name %></div>
-          <div class="user-role"><%= user.role %></div>
-        </div>
-      </div>
-      <a href="/logout" class="btn btn-sm btn-outline" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);">
-        Sign Out
+      <a href="/logout" class="btn btn-sm btn-ghost-danger nav-signout-btn" title="Sign out of operations console">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>Sign Out</span>
       </a>
     <% } %>
   </div>
