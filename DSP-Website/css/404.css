@@ -10,31 +10,32 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 40px 20px;
+  padding: 32px 20px;
 }
 
 .notfound-code {
-  font-size: 6rem;
+  font-size: 5rem;
   font-weight: 900;
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   line-height: 1;
-  background: linear-gradient(135deg, #ef4444 0%, #f97316 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--threat-verified);
   margin-bottom: 12px;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.02em;
 }
 
 .notfound-title {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 800;
+  letter-spacing: -0.02em;
   color: var(--text-primary);
   margin-bottom: 8px;
 }
 
 .notfound-message {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--text-secondary);
   max-width: 480px;
   margin-bottom: 24px;
+  line-height: 1.6;
 }

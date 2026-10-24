@@ -1,7 +1,33 @@
-<div class="form-group"><label class="form-label" for="<%= prefix %>Name">Node name</label><input class="form-input" id="<%= prefix %>Name" name="name" required maxlength="100" placeholder="e.g. Main entrance"></div>
-<div class="form-group"><label class="form-label" for="<%= prefix %>Building">Building / area</label><input class="form-input" id="<%= prefix %>Building" name="building" required maxlength="100" placeholder="e.g. Engineering Building"></div>
-<div class="form-group"><label class="form-label" for="<%= prefix %>Room">Room / location</label><input class="form-input" id="<%= prefix %>Room" name="room" required maxlength="100" placeholder="e.g. Ground floor hallway"></div>
-<details class="node-map-fields"><summary>Map coordinates (optional)</summary><div class="coordinate-fields">
-  <div><label class="form-label" for="<%= prefix %>Lat">Latitude</label><input class="form-input" id="<%= prefix %>Lat" name="lat" type="number" step="any" min="-90" max="90"></div>
-  <div><label class="form-label" for="<%= prefix %>Lng">Longitude</label><input class="form-input" id="<%= prefix %>Lng" name="lng" type="number" step="any" min="-180" max="180"></div>
-</div><p class="nodes-hint">Leave both blank to place this node on the map later.</p></details>
+<div class="form-group">
+  <label class="form-label" for="<%= prefix %>Name">Node Name</label>
+  <input class="form-input" id="<%= prefix %>Name" name="name" required maxlength="100" placeholder="e.g. West Perimeter Gate">
+</div>
+
+<div class="form-group">
+  <label class="form-label" for="<%= prefix %>Building">Building / Area</label>
+  <input class="form-input" id="<%= prefix %>Building" name="building" required maxlength="100" placeholder="e.g. Engineering Complex">
+</div>
+
+<div class="form-group">
+  <label class="form-label" for="<%= prefix %>Room">Room / Location</label>
+  <input class="form-input" id="<%= prefix %>Room" name="room" required maxlength="100" placeholder="e.g. Hallway Corridor A-12">
+</div>
+
+<!-- Interactive Collapsible Control for Geospatial Coordinates -->
+<details class="node-map-fields">
+  <summary>
+    <span class="disclosure-arrow">&#9656;</span>
+    <span>Map Coordinates (Optional)</span>
+  </summary>
+  <div class="coordinate-fields">
+    <div>
+      <label class="form-label" for="<%= prefix %>Lat">Latitude</label>
+      <input class="form-input font-mono" id="<%= prefix %>Lat" name="lat" type="number" step="any" min="-90" max="90" placeholder="14.5995">
+    </div>
+    <div>
+      <label class="form-label" for="<%= prefix %>Lng">Longitude</label>
+      <input class="form-input font-mono" id="<%= prefix %>Lng" name="lng" type="number" step="any" min="-180" max="180" placeholder="120.9842">
+    </div>
+  </div>
+  <p class="nodes-hint">Coordinates link this node to the tactical radar and 2D campus geometry.</p>
+</details>

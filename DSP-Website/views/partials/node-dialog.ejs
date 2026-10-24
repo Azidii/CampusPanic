@@ -1,21 +1,68 @@
 <dialog id="nodeDialog" class="node-dialog" aria-labelledby="nodeDialogTitle">
-  <div class="node-dialog-heading"><div><p class="nodes-eyebrow">SECURITY NODE</p><h2 id="nodeDialogTitle">Live video</h2><p id="nodeDialogLocation" class="nodes-hint"></p></div><button class="btn btn-outline" type="button" id="closeNodeDialog" aria-label="Close enlarged node view">✕</button></div>
+  <div class="node-dialog-heading">
+    <div>
+      <p class="nodes-eyebrow">SECURITY NODE // ENLARGED TELEMETRY</p>
+      <h2 id="nodeDialogTitle">Live Video Feed</h2>
+      <p id="nodeDialogLocation" class="nodes-hint"></p>
+    </div>
+    <button class="btn btn-outline modal-close-btn" type="button" id="closeNodeDialog" aria-label="Close enlarged node view">&times;</button>
+  </div>
+
   <div class="node-dialog-layout">
     <section>
-      <div class="node-viewport node-enlarged" id="dialogPreview"><img hidden alt="Enlarged live security video"><div class="node-idle"><span class="camera-symbol">◉</span><strong>Camera is currently inactive</strong><span>Connect the phone to see the live model output.</span></div><span class="node-muted">🔇 Audio not configured</span></div>
+      <div class="node-viewport node-enlarged" id="dialogPreview">
+        <img hidden alt="Enlarged live security video">
+        <div class="viewport-reticle" aria-hidden="true"></div>
+        <div class="viewport-signal-tag font-mono">SIGNAL: OFFLINE // NO FEED</div>
+        <div class="node-idle">
+          <span class="camera-symbol">◉</span>
+          <strong>Camera is currently inactive</strong>
+          <span>Connect the phone to inspect live model computer vision inferences.</span>
+        </div>
+        <span class="node-muted">🔇 AUDIO NOT CONFIGURED</span>
+      </div>
+
       <dl id="nodeLiveDetails" class="node-live-details"></dl>
-      <div class="node-audio-space"><strong>🔇 Audio not configured</strong><span>This node currently sends video only.</span></div>
+
+      <div class="node-audio-space">
+        <strong>
+          <span class="slot-badge">SLOT 02</span>
+          <span>AUDIO TRANSDUCER</span>
+        </strong>
+        <span class="slot-status">STANDBY // VIDEO ONLY</span>
+      </div>
     </section>
+
     <section class="node-dialog-controls">
       <% if (user.role === 'admin') { %>
-        <h3>Edit node</h3>
-        <form id="editNodeForm" class="node-form"><%- include('node-fields', { prefix: 'edit' }) %><button class="btn btn-primary" type="submit">Save Changes</button></form>
-        <div class="node-connection-controls"><h3>Connection setup</h3><p class="nodes-hint">Reconnect creates a fresh code and ends the previous phone session. Enter the new code in the phone app, then start its camera.</p>
-          <div class="node-action-row"><button class="btn btn-outline" id="pairNodeBtn" type="button">Reconnect / Pair Again</button><button class="btn btn-outline" id="disconnectNodeBtn" type="button">Disconnect</button></div>
-          <div id="pairingPanel" class="pairing-panel" hidden><label>Phone app pairing code</label><output id="pairingCode"></output><span id="pairingExpiry"></span><label>Laptop address — choose the Wi-Fi address</label><div id="pairingAddresses"></div><p>Phone and laptop must use the same Wi-Fi. Enter an address above and the code in Campus Panic Camera, then tap Start camera.</p></div>
+        <h3>Edit Node Parameters</h3>
+        <form id="editNodeForm" class="node-form" autocomplete="off">
+          <%- include('node-fields', { prefix: 'edit' }) %>
+          <button class="btn btn-primary" type="submit">Save Changes</button>
+        </form>
+
+        <div class="node-connection-controls">
+          <h3>Connection Setup &amp; Token</h3>
+          <p class="nodes-hint">Generating a new code revokes previous sessions. Input the fresh token in Campus Panic Camera.</p>
+          <div class="node-action-row">
+            <button class="btn btn-outline" id="pairNodeBtn" type="button">Reconnect / Pair Again</button>
+            <button class="btn btn-outline" id="disconnectNodeBtn" type="button">Disconnect</button>
+          </div>
+          <div id="pairingPanel" class="pairing-panel" hidden>
+            <label>Phone App Pairing Code</label>
+            <output id="pairingCode"></output>
+            <span id="pairingExpiry"></span>
+            <label>Target LAN Host IPv4 Address</label>
+            <div id="pairingAddresses"></div>
+            <p>Ensure phone and laptop operate on the same Wi-Fi subnet. Launch Campus Panic Camera, enter target IPv4:5000 and the 8-digit code.</p>
+          </div>
         </div>
+
         <button class="btn btn-danger" id="deleteNodeBtn" type="button">Delete Node</button>
-      <% } else { %><p class="nodes-hint">Node changes and connection controls are available to administrators.</p><% } %>
+      <% } else { %>
+        <p class="nodes-hint">Node modifications and pairing lifecycle controls are restricted to administrators.</p>
+      <% } %>
+
       <p id="nodeActionMessage" role="status" class="nodes-hint"></p>
     </section>
   </div>

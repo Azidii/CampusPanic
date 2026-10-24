@@ -97,10 +97,10 @@ window.showToast = function (message, type = 'info', duration = 4000) {
   container.appendChild(toast);
 
   setTimeout(() => {
-    toast.style.transition = 'all 0.3s ease-out';
+    toast.style.transition = 'opacity 0.25s ease-out, transform 0.25s ease-out';
     toast.style.opacity = '0';
-    toast.style.transform = 'translateX(50px)';
-    setTimeout(() => toast.remove(), 300);
+    toast.style.transform = 'translateX(30px)';
+    setTimeout(() => toast.remove(), 250);
   }, duration);
 };
 

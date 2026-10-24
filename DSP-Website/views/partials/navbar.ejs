@@ -1,16 +1,31 @@
 <header class="top-nav">
   <div class="nav-left">
     <button class="nav-mobile-toggle" id="mobileNavToggle" aria-label="Toggle navigation menu">&#9776;</button>
-    <a href="/" class="brand-badge">
-      <div class="brand-icon">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <line x1="12" y1="8" x2="12" y2="12"/>
-          <line x1="12" y1="16" x2="12.01" y2="16"/>
-        </svg>
-      </div>
-      <span>CampusPanic</span>
-    </a>
+
+    <!-- Contextual SOC Telemetry & Breadcrumb (Replaces duplicate brand badge) -->
+    <div class="soc-breadcrumbs" aria-label="Current security sector">
+      <span class="soc-category">
+        <% if (page === 'security-nodes') { %>GATEWAY TOOLS
+        <% } else if (page === 'dashboard' || page === 'cam-view' || page === 'all-cams') { %>OPERATIONS CONSOLE
+        <% } else if (page === 'map-view' || page === 'active-nodes-map') { %>CAMPUS GEOMETRY
+        <% } else if (page === 'admin-users') { %>ADMINISTRATION
+        <% } else { %>SYSTEM &amp; ACCOUNT<% } %>
+      </span>
+      <span class="soc-separator">/</span>
+      <span class="soc-current-page">
+        <% if (page === 'security-nodes') { %>SECURITY NODES
+        <% } else if (page === 'dashboard') { %>DASHBOARD
+        <% } else if (page === 'cam-view') { %>CAM VIEW
+        <% } else if (page === 'all-cams') { %>ALL CAMS (CCTV)
+        <% } else if (page === 'map-view') { %>CAMPUS MAP
+        <% } else if (page === 'active-nodes-map') { %>ACTIVE THREATS MAP
+        <% } else if (page === 'admin-users') { %>USER MANAGEMENT
+        <% } else if (page === 'profile') { %>PROFILE
+        <% } else if (page === 'settings') { %>SETTINGS
+        <% } else { %>OPERATIONS<% } %>
+      </span>
+    </div>
+
     <div class="system-status-indicator">
       <div class="pulse-dot-green"></div>
       <span>SOC LIVE</span>
@@ -18,7 +33,7 @@
   </div>
 
   <div class="nav-right">
-    <div style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);" id="liveClock">
+    <div class="soc-live-clock font-mono" id="liveClock" title="SOC System Time">
       --:--:--
     </div>
 
