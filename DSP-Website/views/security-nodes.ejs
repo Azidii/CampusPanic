@@ -9,7 +9,7 @@
         <div>
           <p class="nodes-eyebrow">DEVICE CONNECTIONS // PERIMETER TELEMETRY</p>
           <h1>Security Nodes</h1>
-          <p>Register tactical camera nodes, generate encrypted pairing tokens, and supervise perimeter video streams.</p>
+          <p>Create a location, then pair its phone camera and ESP32.</p>
         </div>
         <a href="/cameras" class="btn btn-outline" id="openCctvBtn">Open CCTV Room &rarr;</a>
       </div>
@@ -45,7 +45,7 @@
         <!-- Right Column: Create Security Node Form Card -->
         <section class="card node-create-panel">
           <h2>Create a security node</h2>
-          <p class="nodes-hint">Your phone connects to this node using its generated pairing code.</p>
+          <p class="nodes-hint">Enter the location once. Then connect the phone camera and pair an ESP32 from the node’s Audio section.</p>
           
           <% if (user.role === 'admin') { %>
             <form id="createNodeForm" class="node-form" autocomplete="off">
@@ -63,9 +63,9 @@
           <div class="node-audio-space">
             <strong>
               <span class="slot-badge">SLOT 02</span>
-              <span>AUDIO TRANSDUCER</span>
+              <span>ESP32 AUDIO CONNECTION</span>
             </strong>
-            <span class="slot-status">STANDBY // NOT CONFIGURED</span>
+            <span class="slot-status">Pair after creating a node</span>
           </div>
         </section>
       </div>

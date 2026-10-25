@@ -328,6 +328,25 @@
   color: var(--text-muted);
 }
 
+.node-audio-controls { margin-top: 16px; padding: 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
+.node-audio-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.node-audio-heading h3 { margin: 0; font-size: 1rem; }
+#esp32AudioState { display: inline-flex; gap: 6px; align-items: center; font-size: .85rem; color: var(--text-secondary); }
+#esp32AudioState[data-muted="true"] { color: var(--type-fire); }
+.node-audio-controls .node-action-row { flex-wrap: wrap; gap: 8px; }
+.node-audio-controls .btn { min-height: 44px; white-space: normal; }
+.node-audio-controls .btn:focus-visible, .node-audio-controls input:focus-visible, .node-audio-controls select:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+.node-audio-controls .btn:disabled { cursor: not-allowed; color: var(--text-muted); background: var(--bg-recessed); }
+.node-audio-controls .btn:active:not(:disabled) { background: var(--bg-surface-active); }
+.node-audio-controls form { margin-top: 16px; }
+.node-audio-controls select { width: 100%; min-height: 44px; color: var(--text-primary); background: var(--bg-recessed); border: 1px solid var(--border-input); border-radius: var(--radius-sm); padding: 8px; }
+.node-audio-controls input { width: 100%; min-height: 44px; padding: 8px 12px; font: inherit; color: var(--text-primary); background: var(--bg-recessed); border: 1px solid var(--border-input); border-radius: var(--radius-sm); }
+.node-muted span { font-size: 12px; letter-spacing: .02em; }
+.audio-mic-symbol { width: 16px; height: 16px; flex-shrink: 0; vertical-align: middle; }
+.node-muted { display: inline-flex; align-items: center; gap: 6px; }
+.node-muted[data-muted="true"] { color: var(--type-fire); }
+@media (max-width: 640px) { .node-audio-controls { padding: 12px; } .node-audio-controls .node-action-row > button { flex: 1 1 100%; } }
+
 /* Intentional Hardware Slot Status Module */
 .node-audio-space {
   display: flex;

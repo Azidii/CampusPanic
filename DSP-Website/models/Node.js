@@ -4,6 +4,8 @@ const nodeSchema = new mongoose.Schema(
   {
     name: { type: String, trim: true, maxlength: 100, default: '' },
     videoEnabled: { type: Boolean, default: false },
+    audioMuted: { type: Boolean, default: false },
+    physicalSequence: { type: Number, default: 0 },
     pairingHash: { type: String, select: false },
     pairingExpiresAt: { type: Date, default: null },
     nodeId: {

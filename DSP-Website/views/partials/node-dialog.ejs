@@ -24,13 +24,30 @@
 
       <dl id="nodeLiveDetails" class="node-live-details"></dl>
 
-      <div class="node-audio-space">
-        <strong>
-          <span class="slot-badge">SLOT 02</span>
-          <span>AUDIO TRANSDUCER</span>
-        </strong>
-        <span class="slot-status">STANDBY // VIDEO ONLY</span>
-      </div>
+      <section class="node-audio-controls" aria-labelledby="esp32Heading">
+        <div class="node-audio-heading">
+          <h3 id="esp32Heading">Audio · ESP32</h3>
+          <span id="esp32AudioState" role="status">Not connected</span>
+        </div>
+        <p id="esp32DeviceStatus" class="nodes-hint"></p>
+        <p class="nodes-hint">The Elechouse V3 sends voice-command data. Raw audio for CNN detection requires a separate microphone.</p>
+        <% if (user.role === 'admin') { %>
+          <div class="node-action-row">
+            <button class="btn btn-outline" id="scanEsp32Btn" type="button">Scan available ESP32s</button>
+            <button class="btn btn-outline" id="muteEsp32Btn" type="button" aria-pressed="false" disabled>Mute audio</button>
+            <button class="btn btn-outline" id="disconnectEsp32Btn" type="button" disabled>Disconnect ESP32</button>
+          </div>
+          <form id="esp32PairForm" class="node-form" autocomplete="off" hidden>
+            <label for="esp32Device">Available ESP32</label>
+            <select id="esp32Device" required><option value="">Scan to find a device</option></select>
+            <label for="esp32Pin">PIN shown on the ESP32</label>
+            <input type="text" id="esp32Pin" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" minlength="8" autocomplete="one-time-code" placeholder="8-digit PIN" required>
+            <button class="btn btn-primary" type="submit">Pair ESP32 to this node</button>
+          </form>
+        <% } %>
+        <p id="esp32PairMessage" class="nodes-hint" role="status" aria-live="polite"></p>
+        <p class="nodes-hint">Mute affects audio monitoring only. Manual buttons and smoke detection remain active.</p>
+      </section>
     </section>
 
     <section class="node-dialog-controls">

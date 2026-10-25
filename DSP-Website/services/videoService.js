@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from '../config/config.js';
+import { describeAudio } from './espDevices.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const videoDir = path.join(root, 'Video-Live');
@@ -90,7 +91,7 @@ export const videoService = {
   },
   async describe(nodes) {
     const states = await this.states();
-    return nodes.map(document => {
+    return describeAudio(nodes.map(document => {
       const node = document.toObject ? document.toObject() : { ...document };
       delete node.pairingHash;
       const state = states[node.nodeId];
@@ -100,9 +101,8 @@ export const videoService = {
         status: 'offline', detections: [], audioStatus: 'not_configured' };
       node.connectionStatus = node.video.status;
       if (node.videoEnabled && node.status !== 'active') node.status = node.video.cameraConnected ? 'online' : 'offline';
-      node.audioStatus = 'not_configured';
       return node;
-    });
+    }));
   },
   addresses() {
     const addresses = Object.values(os.networkInterfaces()).flat().filter(network => network &&

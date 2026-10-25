@@ -5,6 +5,7 @@ import { Camera } from '../models/Camera.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { videoService } from '../services/videoService.js';
 import { issuePairing } from '../services/nodePairing.js';
+import { EspDevice } from '../models/EspDevice.js';
 
 const router = express.Router();
 router.use(requireAuth, (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
@@ -109,6 +110,7 @@ router.delete('/:nodeId', requireAdmin, wrap(async (req, res) => {
     await node.save();
     await videoService.revoke(id);
     await Camera.deleteMany({ $or: [{ nodeId: id }, { cameraId: node.cameraId || '' }] });
+    await EspDevice.updateMany({ nodeId: id }, { $set: { nodeId: null, pinExpiresAt: new Date(0) } });
     await node.deleteOne();
     res.json({ success: true });
   });

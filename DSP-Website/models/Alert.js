@@ -62,6 +62,10 @@ const alertSchema = new mongoose.Schema(
       max: 1,
       default: null
     },
+    triggerSource: { type: String, enum: ['manual_button', 'smoke_sensor'], default: null },
+    deviceId: { type: String, default: null },
+    deviceSequence: { type: Number, default: null },
+    deviceEventKey: { type: String, select: false },
     firearmConfidence: {
       type: Number,
       min: 0,
@@ -93,6 +97,7 @@ const alertSchema = new mongoose.Schema(
 );
 
 alertSchema.index({ nodeId: 1, sequenceNumber: 1 }, { unique: true });
+alertSchema.index({ deviceEventKey: 1 }, { unique: true, sparse: true });
 alertSchema.index({ status: 1, priority: 1, timestamp: -1 });
 
 export const Alert = mongoose.model('Alert', alertSchema);

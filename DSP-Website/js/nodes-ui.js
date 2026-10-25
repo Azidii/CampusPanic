@@ -50,7 +50,68 @@ document.addEventListener('DOMContentLoaded', () => {
     message('Updating node…');
     try { await fn(); await window.refreshCampus(); }
     catch (error) { message(error.message, true); }
-    finally { busy = false; dialog?.querySelectorAll('button').forEach(button => button.disabled = false); }
+    finally { busy = false; dialog?.querySelectorAll('button').forEach(button => button.disabled = false); renderDialog(); }
+  }
+
+  function micSymbol(muted) {
+    return `<svg class="audio-mic-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>${muted ? '<path d="M3 3l18 18"/>' : ''}</svg>`;
+  }
+  function audioText(node) {
+    const audio = node?.audio;
+    if (!audio?.paired) return 'Audio · ESP32 not connected';
+    if (audio.muted) return audio.connected ? 'Audio muted' : 'Audio muted · ESP32 offline';
+    return audio.connected ? 'ESP32 connected · Raw audio unavailable' : 'Audio · ESP32 offline';
+  }
+  function updateAudioBadge(viewport, node) {
+    const badge = viewport?.querySelector('.node-muted');
+    if (!badge) return;
+    badge.dataset.muted = Boolean(node?.audio?.muted);
+    badge.innerHTML = micSymbol(Boolean(node?.audio?.muted)) + `<span>${escape(audioText(node))}</span>`;
+  }
+  function espMessage(text, error = false) {
+    const element = document.getElementById('esp32PairMessage');
+    if (element) { element.textContent = text; element.classList.toggle('node-error', error); }
+  }
+  function renderAudio(node) {
+    const state = document.getElementById('esp32AudioState');
+    if (!state) return;
+    const paired = Boolean(node.audio?.paired);
+    const muted = Boolean(node.audio?.muted);
+    state.dataset.muted = muted;
+    state.innerHTML = micSymbol(muted) + `<span>${escape(audioText(node))}</span>`;
+    document.getElementById('esp32DeviceStatus').textContent = paired ?
+      `${node.audio.deviceId} · ${node.audio.connected ? 'Connected' : 'Offline'} · Location comes from this node.` :
+      'Connect the ESP32 to the same network, scan, then enter the PIN shown on its Serial Monitor.';
+    const mute = document.getElementById('muteEsp32Btn');
+    if (mute) { mute.disabled = busy || !paired; mute.setAttribute('aria-pressed', String(muted)); mute.innerHTML = micSymbol(muted) + (muted ? ' Unmute audio' : ' Mute audio'); }
+    const disconnect = document.getElementById('disconnectEsp32Btn');
+    if (disconnect) disconnect.disabled = busy || !paired;
+    const scan = document.getElementById('scanEsp32Btn');
+    if (scan) { scan.hidden = paired; scan.disabled = busy; }
+    const form = document.getElementById('esp32PairForm');
+    if (form) form.hidden = paired;
+  }
+  async function loadAvailableEsp32() {
+    const select = document.getElementById('esp32Device');
+    if (!select || !dialog?.open) return;
+    const id = selectedId;
+    const scan = document.getElementById('scanEsp32Btn');
+    scan.disabled = true;
+    espMessage('Scanning announced ESP32 devices…');
+    try {
+      const result = await api('/api/esp32/available');
+      if (selectedId !== id || !dialog.open) return;
+      const previous = select.value;
+      select.replaceChildren();
+      const placeholder = new Option(result.devices.length ? 'Choose an ESP32' : 'No available ESP32 found', '');
+      select.append(placeholder);
+      for (const device of result.devices) select.append(new Option(device.deviceId, device.deviceId));
+      if (result.devices.some(device => device.deviceId === previous)) select.value = previous;
+      else if (result.devices.length === 1) select.value = result.devices[0].deviceId;
+      espMessage(result.devices.length ? 'Enter the current 8-digit PIN shown on the selected ESP32.' :
+        'No available ESP32 found. Check Wi-Fi, USB provisioning and website address, then scan again.');
+    } catch (error) { if (selectedId === id && dialog.open) espMessage(error.message, true); }
+    finally { if (selectedId === id && dialog.open) scan.disabled = busy; }
   }
 
   function stopPreview(viewport) {
@@ -67,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function updatePreview(viewport, node) {
     if (!viewport) return;
+    updateAudioBadge(viewport, node);
     const image = viewport.querySelector('img');
     const idle = viewport.querySelector('.node-idle');
     const live = node?.video?.live && !document.hidden;
@@ -126,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'Inference': video.inferenceMs != null ? `${video.inferenceMs} ms` : '—',
       'Frame age': video.frameAgeMs != null ? `${video.frameAgeMs} ms` : '—',
       'Model result': video.live ? best !== null ? `Gun detected · ${(best * 100).toFixed(1)}%` : 'No gun detected in current frame' : 'Waiting for fresh model output',
-      'Audio': 'Muted · Not configured'
+      'Audio': audioText(node)
     };
     element.innerHTML = Object.entries(values).map(([label, value]) => `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`).join('');
   }
@@ -160,7 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
       updatePreview(card.querySelector('.node-viewport'), node);
     }
     document.getElementById('cctvEmpty').hidden = visible.length > 0;
-    document.getElementById('cctvSummary').textContent = `${nodes.filter(n => n.video?.live).length} live / ${nodes.length} nodes · Video only`;
+    document.getElementById('cctvSummary').textContent = `${nodes.filter(n => n.video?.live).length} live cameras / ${nodes.length} nodes · ${nodes.filter(n => n.audio?.connected).length} ESP32 connected`;
   }
   function renderList() {
     if (!list) return;
@@ -169,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!nodes.length) { const empty = document.createElement('p'); empty.className = 'nodes-hint'; empty.textContent = 'No nodes yet. Create your first node to connect a phone.'; list.append(empty); }
     for (const node of nodes) {
       const button = document.createElement('button'); button.type = 'button'; button.className = 'setup-node-button';
-      button.innerHTML = `<span><strong>${escape(title(node))}</strong><small>${escape(location(node))}</small></span><span class="node-state" data-live="${Boolean(node.video?.live)}">${escape(status(node).toUpperCase())} →</span>`;
+      button.innerHTML = `<span><strong>${escape(title(node))}</strong><small>${escape(location(node))} · ${escape(audioText(node))}</small></span><span class="node-state" data-live="${Boolean(node.video?.live)}">${escape(status(node).toUpperCase())} →</span>`;
       button.addEventListener('click', () => { previewId = node.nodeId; updatePreview(document.getElementById('setupPreview'), node); openNode(node.nodeId); });
       list.append(button);
     }
@@ -184,6 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('nodeDialogLocation').textContent = location(node);
     updatePreview(document.getElementById('dialogPreview'), node);
     details(document.getElementById('nodeLiveDetails'), node);
+    renderAudio(node);
   }
   function openNode(id, pairing, addresses) {
     const node = nodes.find(n => n.nodeId === id);
@@ -193,9 +256,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('pairingPanel')?.setAttribute('hidden', '');
     if (editForm) for (const key of ['name', 'building', 'room', 'lat', 'lng']) editForm.elements[key].value = node[key] ?? '';
     message('');
+    espMessage('');
+    const pin = document.getElementById('esp32Pin'); if (pin) pin.value = '';
     if (!dialog.open) dialog.showModal();
     renderDialog();
     if (pairing && editForm) showPairing(pairing, addresses);
+    if (!node.audio?.paired) loadAvailableEsp32();
   }
   function showPairing(pairing, addresses = []) {
     document.getElementById('pairingPanel').hidden = false;
@@ -218,6 +284,46 @@ document.addEventListener('DOMContentLoaded', () => {
     stopPreview(document.getElementById('dialogPreview'));
     expiresAt = null;
     const code = document.getElementById('pairingCode'); if (code) code.textContent = '';
+    const pin = document.getElementById('esp32Pin'); if (pin) pin.value = '';
+  });
+  document.getElementById('scanEsp32Btn')?.addEventListener('click', loadAvailableEsp32);
+  document.getElementById('esp32PairForm')?.addEventListener('submit', event => {
+    event.preventDefault();
+    const id = selectedId;
+    const deviceId = document.getElementById('esp32Device').value;
+    const pin = document.getElementById('esp32Pin').value;
+    action(async () => {
+      try {
+        await api(`/api/esp32/pair/${encodeURIComponent(id)}`, 'POST', { deviceId, pin });
+        if (selectedId === id && dialog.open) {
+          document.getElementById('esp32Pin').value = '';
+          espMessage('ESP32 paired to this node.');
+          message('ESP32 connected to this node.');
+        }
+      } catch (error) { if (selectedId === id && dialog.open) espMessage(error.message, true); throw error; }
+    });
+  });
+  document.getElementById('muteEsp32Btn')?.addEventListener('click', () => {
+    const id = selectedId;
+    const node = nodes.find(node => node.nodeId === id);
+    if (!node?.audio?.paired) return;
+    action(async () => {
+      const result = await api(`/api/esp32/nodes/${encodeURIComponent(id)}/mute`, 'PATCH', { muted: !node.audio.muted });
+      if (selectedId === id && dialog.open) {
+        espMessage(result.muted ? 'Audio mute saved.' : 'Audio unmute saved.');
+        message('Audio setting saved; the ESP32 updates on its next heartbeat.');
+      }
+    });
+  });
+  document.getElementById('disconnectEsp32Btn')?.addEventListener('click', () => {
+    const id = selectedId;
+    action(async () => {
+      await api(`/api/esp32/nodes/${encodeURIComponent(id)}`, 'DELETE');
+      if (selectedId === id && dialog.open) {
+        espMessage('ESP32 disconnected. It will show a new PIN when it checks in again.');
+        message('ESP32 disconnected; phone camera connection is unchanged.');
+      }
+    });
   });
   dialog?.addEventListener('click', event => { if (event.target === dialog) {
     const rect = dialog.getBoundingClientRect();
@@ -280,7 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const banner = document.getElementById('receiverStatus');
     if (banner) {
       if (receiver.ready) {
-        banner.innerHTML = '<span class="receiver-dot-live">●</span> Model service ready · Live video is silent · Audio not configured';
+        banner.innerHTML = '<span class="receiver-dot-live">●</span> Video model ready · Pair ESP32 devices from each node’s Audio section';
       } else {
         const safeMsg = escape(receiver.message || 'Model service unavailable');
         banner.innerHTML = '<span class="receiver-warn-icon">⚠</span> ' + safeMsg.replace(/\b(VIDEO_PYTHON|VIDEO_MODEL_PATH)\b/g, '<code>$1</code>');

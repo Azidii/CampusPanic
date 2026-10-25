@@ -109,10 +109,30 @@ metadata is periodically saved to MongoDB. Saved nodes survive website restarts;
 active streams reconnect. Camera connectivity is separate from incident status
 (`active` still means an emergency in the existing alert workflow).
 
-Node audio is reserved but not captured or transmitted. Live video is silent;
-there is no working unmute control yet. The console's existing **Audio Siren** is
-an operator alarm and is independent of node audio. Gun detection output does
-not automatically create a gunshot incident or claim audio verification.
+In each node's **Audio · ESP32** section, administrators can discover recently
+announced ESP32 devices, select a hardware ID and enter the random 8-digit PIN
+shown by that device in Serial Monitor (or its future OLED). PINs expire in five
+minutes; five failed attempts require a refreshed PIN. Devices must first join
+the configured Wi-Fi and announce themselves; this is not a browser LAN scan.
+
+The node owns building/room metadata. Paired physical alerts read the current
+location from the database and require a device-specific credential; the ESP32
+does not need the website's shared ingest key. Camera pairing remains separate.
+**Mute audio** persists per node and shows a microphone-slash icon plus muted
+text in node previews and the detail dialog. Manual buttons, armed smoke events,
+video and the operator's Audio Siren remain active. Guards can see the state;
+administrators can change it. Offline ESP32s are marked stale after 20 seconds.
+
+The Elechouse V3 currently fitted supplies command data, not raw CNN audio. The
+UI therefore reports **Raw audio unavailable**, including when paired/unmuted.
+There is no live audio capture, audio playback or CNN audio inference in this
+pairing feature. Gun detection never claims audio verification.
+
+See `../ESP32/README.md` for `.env`/USB setup. Run
+`node --test tests/esp32-pairing.test.mjs` for the isolated pairing/mute/device
+isolation tests. The prototype still uses local HTTP and unencrypted board
+runtime storage; use a trusted network. No credential or PIN is returned in
+discovery or node-list responses.
 
 ## Verification
 

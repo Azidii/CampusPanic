@@ -14,6 +14,7 @@ import { startRetentionCleaner } from './utils/retentionCleaner.js';
 import { User } from './models/User.js';
 import phoneRoutes from './routes/phoneRoutes.js';
 import liveRoutes from './routes/liveRoutes.js';
+import espRoutes from './routes/espRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
 import { videoService } from './services/videoService.js';
 
@@ -89,6 +90,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/live', liveRoutes);
+app.use('/api/esp32', espRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/profile', profileRoutes);
