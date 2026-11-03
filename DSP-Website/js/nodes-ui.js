@@ -57,16 +57,34 @@ document.addEventListener('DOMContentLoaded', () => {
     return `<svg class="audio-mic-symbol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/>${muted ? '<path d="M3 3l18 18"/>' : ''}</svg>`;
   }
   function audioText(node) {
+    const phoneAudio = node?.phoneAudio || node?.audioCNN;
+    if (phoneAudio && phoneAudio.class && phoneAudio.class !== 'Idle') {
+      const pct = Math.round((phoneAudio.confidence || 0) * 100);
+      if (phoneAudio.alert) {
+        return ⚠️  DETECTED (%);
+      }
+      return Audio:  (%);
+    }
     const audio = node?.audio;
-    if (!audio?.paired) return 'Audio · ESP32 not connected';
+    if (!audio?.paired) return 'Audio · Phone Mic / ESP32';
     if (audio.muted) return audio.connected ? 'Audio muted' : 'Audio muted · ESP32 offline';
     return audio.connected ? 'ESP32 connected · Raw audio unavailable' : 'Audio · ESP32 offline';
   }
   function updateAudioBadge(viewport, node) {
     const badge = viewport?.querySelector('.node-muted');
     if (!badge) return;
+    const phoneAudio = node?.phoneAudio || node?.audioCNN;
+    if (phoneAudio?.alert) {
+      badge.style.background = '#dc2626';
+      badge.style.color = '#ffffff';
+      badge.style.fontWeight = 'bold';
+    } else {
+      badge.style.background = '';
+      badge.style.color = '';
+      badge.style.fontWeight = '';
+    }
     badge.dataset.muted = Boolean(node?.audio?.muted);
-    badge.innerHTML = micSymbol(Boolean(node?.audio?.muted)) + `<span>${escape(audioText(node))}</span>`;
+    badge.innerHTML = micSymbol(Boolean(node?.audio?.muted)) + <span></span>;
   }
   function espMessage(text, error = false) {
     const element = document.getElementById('esp32PairMessage');

@@ -3,6 +3,7 @@ import { Alert } from '../models/Alert.js';
 import { Node } from '../models/Node.js';
 import { requireAuth } from '../middleware/auth.js';
 import { videoService } from '../services/videoService.js';
+import { audioService } from '../services/audioService.js';
 
 const router = express.Router();
 router.get('/', requireAuth, async (req, res, next) => {
@@ -16,8 +17,21 @@ router.get('/', requireAuth, async (req, res, next) => {
       [type, alerts.filter(a => a.emergencyType === type).length]));
     counts.unresolved = alerts.filter(a => a.status !== 'resolved').length;
     counts.verifiedThreats = alerts.filter(a => a.threatStatus === 'verified_threat' && a.status !== 'resolved').length;
-    res.set('Cache-Control', 'no-store').json({ success: true, nodes, alerts, counts,
-      receiver: { ready: videoService.ready, message: videoService.message, addresses: videoService.addresses() } });
+    res.set('Cache-Control', 'no-store').json({
+      success: true,
+      nodes,
+      alerts,
+      counts,
+      receiver: {
+        ready: videoService.ready,
+        message: videoService.message,
+        addresses: videoService.addresses()
+      },
+      audioReceiver: {
+        ready: audioService.ready,
+        message: audioService.message
+      }
+    });
   } catch (error) { next(error); }
 });
 export default router;

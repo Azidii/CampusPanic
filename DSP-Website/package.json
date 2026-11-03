@@ -10,7 +10,8 @@
     "db:check": "node scripts/check-db.js",
     "seed": "node scripts/seed.js",
     "simulate": "node scripts/simulate-alert.js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js tests/*.test.mjs",
+    "test:audio": "node --test tests/audio-streaming.test.mjs"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from '../config/config.js';
 import { describeAudio } from './espDevices.js';
+import { audioService } from './audioService.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const videoDir = path.join(root, 'Video-Live');
@@ -91,7 +92,7 @@ export const videoService = {
   },
   async describe(nodes) {
     const states = await this.states();
-    return describeAudio(nodes.map(document => {
+    const described = await describeAudio(nodes.map(document => {
       const node = document.toObject ? document.toObject() : { ...document };
       delete node.pairingHash;
       const state = states[node.nodeId];
@@ -99,10 +100,23 @@ export const videoService = {
       // A revoked session can never make a deleted/re-paired node look live.
       node.video = session && state ? state : { live: false, cameraConnected: false,
         status: 'offline', detections: [], audioStatus: 'not_configured' };
+      // Attach client-side detections if available
+      if (session?.clientDetections?.detections?.length) {
+        node.video.clientDetections = session.clientDetections.detections;
+        if (!node.video.detections.length) {
+          node.video.detections = session.clientDetections.detections;
+        }
+      }
       node.connectionStatus = node.video.status;
       if (node.videoEnabled && node.status !== 'active') node.status = node.video.cameraConnected ? 'online' : 'offline';
       return node;
     }));
+
+    return described.map(node => {
+      node.phoneAudio = audioService.getNodeAudio(node.nodeId);
+      node.audioCNN = node.phoneAudio;
+      return node;
+    });
   },
   addresses() {
     const addresses = Object.values(os.networkInterfaces()).flat().filter(network => network &&
