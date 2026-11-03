@@ -16,6 +16,7 @@ import android.os.VibratorManager
 import android.text.InputFilter
 import android.text.InputType
 import android.util.Size
+import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
@@ -27,6 +28,8 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
+import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -60,6 +63,7 @@ class MainActivity : ComponentActivity() {
     private val generation = AtomicInteger()
 
     private var cameraProvider: ProcessCameraProvider? = null
+    private var pendingCameraLayout: View.OnLayoutChangeListener? = null
     @Volatile private var running = false
     @Volatile private var session: String? = null
     @Volatile private var connection: HttpURLConnection? = null
@@ -278,24 +282,69 @@ class MainActivity : ComponentActivity() {
             try {
                 val provider = future.get()
                 cameraProvider = provider
-                val cameraPreview = Preview.Builder().build().also { it.surfaceProvider = preview.surfaceProvider }
-                val analysis = ImageAnalysis.Builder()
-                    .setResolutionSelector(
-                        ResolutionSelector.Builder().setResolutionStrategy(
-                            ResolutionStrategy(Size(640, 480), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER)
-                        ).build()
-                    )
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-
-                analysis.setAnalyzer(analysisExecutor) { image -> analyze(image, epoch) }
-                provider.unbindAll()
-                provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, cameraPreview, analysis)
-                status.text = "Connecting to laptop gateway…"
+                bindCameraWhenReady(provider, epoch)
             } catch (error: Exception) {
                 stopTransmission("Could not open camera: ${error.message}")
             }
         }, ContextCompat.getMainExecutor(this))
+    }
+
+    private fun cancelPendingCameraLayout() {
+        pendingCameraLayout?.let { preview.removeOnLayoutChangeListener(it) }
+        pendingCameraLayout = null
+    }
+
+    private fun bindCameraWhenReady(provider: ProcessCameraProvider, epoch: Int) {
+        if (!running || generation.get() != epoch) return
+        val rotation = preview.display?.rotation
+        val viewPort = if (rotation != null) preview.viewPort else null
+        if (rotation == null || viewPort == null) {
+            cancelPendingCameraLayout()
+            status.text = "Waiting for camera preview layout…"
+            val listener = object : View.OnLayoutChangeListener {
+                override fun onLayoutChange(view: View, left: Int, top: Int, right: Int, bottom: Int,
+                                            oldLeft: Int, oldTop: Int, oldRight: Int, oldBottom: Int) {
+                    preview.removeOnLayoutChangeListener(this)
+                    if (pendingCameraLayout === this) pendingCameraLayout = null
+                    if (running && generation.get() == epoch) bindCameraWhenReady(provider, epoch)
+                }
+            }
+            pendingCameraLayout = listener
+            preview.addOnLayoutChangeListener(listener)
+            return
+        }
+        cancelPendingCameraLayout()
+        try {
+            val aspectRatio = AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY
+            val cameraPreview = Preview.Builder()
+                .setTargetRotation(rotation)
+                .setResolutionSelector(ResolutionSelector.Builder().setAspectRatioStrategy(aspectRatio).build())
+                .build().also { it.surfaceProvider = preview.surfaceProvider }
+            val analysis = ImageAnalysis.Builder()
+                .setTargetRotation(rotation)
+                .setResolutionSelector(
+                    ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(aspectRatio)
+                        .setResolutionStrategy(
+                            ResolutionStrategy(Size(640, 480), ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER)
+                        ).build()
+                )
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                .build()
+            analysis.setAnalyzer(analysisExecutor) { image -> analyze(image, epoch) }
+            // A shared viewport makes the preview and uploaded image cover the
+            // same sensor area even when their selected resolutions differ.
+            val useCases = UseCaseGroup.Builder()
+                .setViewPort(viewPort)
+                .addUseCase(cameraPreview)
+                .addUseCase(analysis)
+                .build()
+            provider.unbindAll()
+            provider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA, useCases)
+            status.text = "Connecting to laptop gateway…"
+        } catch (error: Exception) {
+            stopTransmission("Could not open camera: ${error.message}")
+        }
     }
 
     private fun handleAudioResult(result: AudioAlertResult) {
@@ -340,18 +389,29 @@ class MainActivity : ComponentActivity() {
         }
 
         var bitmap: Bitmap? = null
+        var cropped: Bitmap? = null
         var rotated: Bitmap? = null
+        var prepared: Bitmap? = null
         var imageClosed = false
 
         try {
-            val rotation = image.imageInfo.rotationDegrees
-            bitmap = image.toBitmap()
+            // Snapshot CameraX's crop and rotation while ImageProxy is open.
+            // cropRect is in unrotated image coordinates, so cropping must come
+            // before rotation for both inference and the uploaded JPEG.
+            val crop = image.cropRect
+            val geometry = CameraFrameGeometry.calculate(image.width, image.height,
+                crop.left, crop.top, crop.right, crop.bottom, image.imageInfo.rotationDegrees)
+            val originalBitmap = image.toBitmap()
+            bitmap = originalBitmap
             image.close()
             imageClosed = true
 
-            rotated = if (rotation == 0) bitmap else Bitmap.createBitmap(
-                bitmap, 0, 0, bitmap.width, bitmap.height,
-                Matrix().apply { postRotate(rotation.toFloat()) }, true
+            val croppedBitmap = Bitmap.createBitmap(originalBitmap, geometry.cropLeft, geometry.cropTop,
+                geometry.cropWidth, geometry.cropHeight)
+            cropped = croppedBitmap
+            rotated = if (geometry.rotationDegrees == 0) croppedBitmap else Bitmap.createBitmap(
+                croppedBitmap, 0, 0, croppedBitmap.width, croppedBitmap.height,
+                Matrix().apply { postRotate(geometry.rotationDegrees.toFloat()) }, true
             )
 
             val frameBitmap = checkNotNull(rotated)
@@ -401,17 +461,13 @@ class MainActivity : ComponentActivity() {
             }
 
             // 2. Prepare frame for live CCTV feed
-            val maxSide = maxOf(frameBitmap.width, frameBitmap.height)
-            var prepared = frameBitmap
-            if (maxSide > 960) {
-                val scaled = Bitmap.createScaledBitmap(frameBitmap, frameBitmap.width * 960 / maxSide, frameBitmap.height * 960 / maxSide, true)
-                if (frameBitmap !== bitmap) frameBitmap.recycle()
-                prepared = scaled
-                rotated = scaled
-            }
+            val preparedBitmap = if (frameBitmap.width != geometry.jpegWidth || frameBitmap.height != geometry.jpegHeight) {
+                Bitmap.createScaledBitmap(frameBitmap, geometry.jpegWidth, geometry.jpegHeight, true)
+            } else frameBitmap
+            prepared = preparedBitmap
 
             val bytes = ByteArrayOutputStream().use { output ->
-                check(prepared.compress(Bitmap.CompressFormat.JPEG, 75, output)) { "Could not encode camera image" }
+                check(preparedBitmap.compress(Bitmap.CompressFormat.JPEG, 75, output)) { "Could not encode camera image" }
                 output.toByteArray()
             }
 
@@ -426,8 +482,11 @@ class MainActivity : ComponentActivity() {
             handleNetworkFailure(error, epoch)
         } finally {
             if (!imageClosed) image.close()
-            if (rotated !== bitmap) rotated?.recycle()
-            bitmap?.recycle()
+            // Bitmap creation may return its source unchanged. Recycle each
+            // distinct allocation only after inference and JPEG encoding finish.
+            for (buffer in arrayOf(prepared, rotated, cropped, bitmap)) {
+                if (buffer != null && !buffer.isRecycled) buffer.recycle()
+            }
         }
     }
 
@@ -513,6 +572,7 @@ class MainActivity : ComponentActivity() {
         permissionPending = false
         running = false
         generation.incrementAndGet()
+        cancelPendingCameraLayout()
 
         val oldSession = session
         val oldSettings = settings

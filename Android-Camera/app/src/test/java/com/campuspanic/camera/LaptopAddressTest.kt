@@ -11,9 +11,11 @@ class LaptopAddressTest {
         val home = host(192, 168, 1, 2)
         val office = host(10, 1, 2, 3)
         val private = host(172, 16, 0, 2)
-        assertEquals("http://$home:5055", LaptopAddress.parse(home))
+        assertEquals("http://$home:5000", LaptopAddress.parse(home))
         assertEquals("http://$office:8080", LaptopAddress.parse("http://$office:8080/"))
-        assertEquals("http://$private:5055", LaptopAddress.parse(private))
+        assertEquals("http://$private:5000", LaptopAddress.parse(private))
+        // The older standalone receiver is still supported with an explicit port.
+        assertEquals("http://$home:5055", LaptopAddress.parse("$home:5055"))
     }
 
     @Test fun rejectsPublicAndAmbiguousAddresses() {
