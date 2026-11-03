@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import '../config/env.js';
 
 async function freePort() {
   const socket = net.createServer();
@@ -19,10 +21,11 @@ test('Audio streaming end-to-end integration and load testing', { timeout: 60000
   process.env.JWT_SECRET = 'test-secret-12345678901234567890';
   process.env.DEVICE_API_KEY = 'test-device-key-123456789012345';
   process.env.ADMIN_PASSWORD = 'TestPassword123!';
-  process.env.AUDIO_PYTHON = 'python';
   process.env.AUDIO_WORKER_PORT = String(await freePort());
 
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+  const localAudioPython = path.join(root, 'Audio-Live', 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+  process.env.AUDIO_PYTHON ||= existsSync(localAudioPython) ? localAudioPython : 'python';
   process.env.AUDIO_MODEL_PATH = path.join(root, 'Audio-CNN', 'Audio CNN', 'Models', 'best_cnn_model.keras');
 
   const memory = await MongoMemoryServer.create();

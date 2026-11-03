@@ -61,9 +61,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (phoneAudio && phoneAudio.class && phoneAudio.class !== 'Idle') {
       const pct = Math.round((phoneAudio.confidence || 0) * 100);
       if (phoneAudio.alert) {
-        return ⚠️  DETECTED (%);
+        return `⚠️ ${phoneAudio.class} DETECTED (${pct}%)`;
       }
-      return Audio:  (%);
+      return `Audio: ${phoneAudio.class} (${pct}%)`;
     }
     const audio = node?.audio;
     if (!audio?.paired) return 'Audio · Phone Mic / ESP32';
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
       badge.style.fontWeight = '';
     }
     badge.dataset.muted = Boolean(node?.audio?.muted);
-    badge.innerHTML = micSymbol(Boolean(node?.audio?.muted)) + <span></span>;
+    badge.innerHTML = micSymbol(Boolean(node?.audio?.muted)) + `<span>${escape(audioText(node))}</span>`;
   }
   function espMessage(text, error = false) {
     const element = document.getElementById('esp32PairMessage');

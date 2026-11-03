@@ -19,7 +19,10 @@ requests; alert and node information refreshes every two seconds.
    Atlas remains supported through `MONGODB_URI`; it requires internet and the
    laptop's IP must be allowed in Atlas. Database failure stops startup rather
    than silently replacing saved nodes with a temporary database.
-5. Run `../Video-Live/Setup-Video.ps1` once to create the Python environment.
+5. Run `../Video-Live/Setup-Video.ps1` and `../Audio-Live/Setup-Audio.ps1` once
+   to create separate Python environments for video and audio. The audio model
+   and classes are included in `Audio-CNN/Audio CNN/Models`. The website uses
+   the audio environment automatically; `AUDIO_PYTHON` can select another one.
 6. Supply the approved `gun_model.tflite` locally. Either put it at
    `../models/gun_model.tflite` or set `VIDEO_MODEL_PATH` in `.env` to its full path.
    Set `VIDEO_PYTHON` only if using a different Python environment. The existing
@@ -27,6 +30,16 @@ requests; alert and node information refreshes every two seconds.
    fallback on the original laptop. No model download, training or copying occurs.
 7. Run `npm run db:check`, then `npm start`. From the repository root, `npm start`
    also starts this website.
+
+If Atlas fails with `querySrv ECONNREFUSED`, Node.js cannot resolve the cluster's
+DNS records. Add `MONGODB_DNS_SERVERS=1.1.1.1,8.8.8.8` to the existing `.env` when
+those DNS services are reachable on your network, then run `npm run db:check`.
+This setting applies only to the application's Node.js process and leaves Windows
+network settings unchanged. Leave it unset when your normal resolver works.
+The diagnostic uses the same connection settings as startup and does not seed or
+delete data. It also works from the repository root. Its success output names the
+selected database: an Atlas URI with no database path defaults to `test`; keep the
+database that contains your saved nodes when editing the URI.
 
 Open `http://localhost:5000` on the laptop. Initial administrator provisioning
 only happens when no administrator exists; changing `.env` does not reset an

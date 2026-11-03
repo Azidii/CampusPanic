@@ -17,6 +17,17 @@ if (!Number.isInteger(workerPort) || workerPort < 1 || workerPort > 65535) {
 }
 const workerUrl = `http://127.0.0.1:${workerPort}`;
 
+export const resolveAudioPython = ({ env = process.env, projectRoot = root, platform = process.platform, fileExists = existsSync } = {}) => {
+  const configured = env.AUDIO_PYTHON?.trim();
+  if (configured) return configured;
+  const executable = platform === 'win32' ? 'Scripts/python.exe' : 'bin/python';
+  const candidates = [
+    path.join(projectRoot, 'Audio-Live', 'venv', executable),
+    path.join(projectRoot, '.venv', executable)
+  ];
+  return candidates.find(candidate => fileExists(candidate)) || 'python';
+};
+
 // Throttle alert creation in DB so a continuous scream or multiple gunshots in 10s don't create 10 alert records
 const recentAlerts = new Map(); // nodeId -> timestamp
 
@@ -38,15 +49,8 @@ export const audioService = {
   start() {
     if (this.child || this.stopping) return;
 
-    // Detect python executable: env var, system python (where packages are installed), or virtualenv
-    const candidates = [
-      process.env.AUDIO_PYTHON,
-      'python',
-      'py',
-      path.join(root, '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python')
-    ].filter(Boolean);
-
-    let python = candidates.find(c => c === 'python' || c === 'py' || existsSync(c)) || 'python';
+    // Prefer an explicitly configured interpreter, then the prepared local venv.
+    const python = resolveAudioPython();
 
     const modelPath = process.env.AUDIO_MODEL_PATH || path.join(audioCnnDir, 'Models', 'best_cnn_model.keras');
     const classesPath = path.join(audioCnnDir, 'Models', 'classes.json');

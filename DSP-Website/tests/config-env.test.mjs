@@ -1,11 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { resolveMongoUri } from '../config/mongoConfig.js';
 
 const source = await readFile(new URL('../config/config.js', import.meta.url), 'utf8');
 // Run the actual config body with dotenv/path bootstrapping removed so real .env is never loaded.
 const body = source.slice(source.indexOf('const requiredSecret')).replace('export const config =', 'const config =');
-const load = values => new Function('process', body + '\nreturn config;')({ env: values });
+const load = values => new Function('process', 'resolveMongoUri', body + '\nreturn config;')({ env: values }, resolveMongoUri);
 const fixture = { JWT_SECRET: 'test-only-jwt', DEVICE_API_KEY: 'test-only-device', ADMIN_PASSWORD: 'test-only-admin' };
 
 test('required secrets have no source-code fallback', () => {
@@ -18,4 +19,9 @@ test('required secrets have no source-code fallback', () => {
       assert.throws(() => load({ ...fixture, [name]: missing }), new RegExp(name));
     }
   }
+});
+
+test('application configuration uses the shared trimmed MongoDB URI and default', () => {
+  assert.equal(load(fixture).mongoUri, resolveMongoUri({}));
+  assert.equal(load({ ...fixture, MONGODB_URI: '  mongodb://127.0.0.1:27017/existing  ' }).mongoUri, 'mongodb://127.0.0.1:27017/existing');
 });

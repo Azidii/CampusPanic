@@ -1,11 +1,5 @@
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+import './env.js';
+import { resolveMongoUri } from './mongoConfig.js';
 
 const requiredSecret = (name) => {
   const value = process.env[name];
@@ -17,7 +11,7 @@ export const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT, 10) || 5000,
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5000',
-  mongoUri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/campuspanic',
+  mongoUri: resolveMongoUri(process.env),
   jwtSecret: requiredSecret('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   deviceApiKey: requiredSecret('DEVICE_API_KEY'),

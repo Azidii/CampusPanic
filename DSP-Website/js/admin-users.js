@@ -87,6 +87,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteBtn = e.target.closest('.delete-user-btn');
 
     if (editBtn) {
+      // Opening a different account must not carry over a pending password reset.
+      document.getElementById('editUserForm')?.reset();
       const id = editBtn.dataset.id;
       const name = editBtn.dataset.name;
       const email = editBtn.dataset.email;
