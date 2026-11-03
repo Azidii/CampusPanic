@@ -1,28 +1,36 @@
 import mongoose from 'mongoose';
-import { config } from '../config/config.js';
+import dns from 'node:dns';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import '../config/env.js';
+import { configureMongoDns, mongoConnectionError, resolveMongoUri, validateMongoUri } from '../config/mongoConfig.js';
 
 // This check never starts the application, seeds data or uses a temporary database.
-const checkDB = async () => {
-  if (!process.env.MONGODB_URI || /<[^>]+>/.test(config.mongoUri)) {
-    console.error('[Database check] Enter your MongoDB database username and password in DSP-Website/.env first.');
-    process.exitCode = 1;
-    return;
-  }
-
+export const checkDB = async ({ client = mongoose, env = process.env, logger = console, resolver = dns } = {}) => {
+  let success = false;
   try {
-    await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 10000 });
-    await mongoose.connection.db.command({ ping: 1 });
-    console.log(`[Database check] Connected successfully. Database: ${mongoose.connection.name}`);
+    const uri = resolveMongoUri(env);
+    validateMongoUri(uri);
+    configureMongoDns(env, resolver);
+    await client.connect(uri, { serverSelectionTimeoutMS: 10000 });
+    await client.connection.db.command({ ping: 1 });
+    logger.log(`[Database check] Connected successfully. Database: ${client.connection.name} (persistent storage; ping passed).`);
+    success = true;
   } catch (error) {
-    // Avoid logging driver messages because they can include connection credentials.
-    const hint = error.code === 18
-      ? 'Check your MongoDB database username and password.'
-      : 'Check the connection string, database credentials, network and Atlas IP access list.';
-    console.error(`[Database check] Connection failed. ${hint}`);
-    process.exitCode = 1;
+    const diagnostic = mongoConnectionError(error);
+    logger.error(`[Database check] ${diagnostic.code}: ${diagnostic.message}`);
   } finally {
-    await mongoose.disconnect();
+    try {
+      await client.disconnect();
+    } catch (error) {
+      const diagnostic = mongoConnectionError(error);
+      logger.error(`[Database check] Disconnect failed. ${diagnostic.code}: ${diagnostic.message}`);
+      success = false;
+    }
   }
+  return success;
 };
 
-await checkDB();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (!await checkDB()) process.exitCode = 1;
+}

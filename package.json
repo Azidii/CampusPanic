@@ -5,6 +5,7 @@
   "scripts": {
     "start": "npm start --prefix DSP-Website",
     "dev": "npm run dev --prefix DSP-Website",
+    "db:check": "npm run db:check --prefix DSP-Website",
     "seed": "npm run seed --prefix DSP-Website",
     "simulate": "npm run simulate --prefix DSP-Website"
   }

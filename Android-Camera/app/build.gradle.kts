@@ -9,8 +9,8 @@ android {
         applicationId = "com.campuspanic.camera"
         minSdk = 23
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.1"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -19,11 +19,16 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildTypes { release { isMinifyEnabled = false } }
     lint { abortOnError = true }
+    androidResources {
+        noCompress.add("tflite")
+    }
 }
 dependencies {
     implementation("androidx.activity:activity-ktx:1.9.3")
     implementation("androidx.camera:camera-camera2:1.5.3")
     implementation("androidx.camera:camera-lifecycle:1.5.3")
     implementation("androidx.camera:camera-view:1.5.3")
+    implementation("org.tensorflow:tensorflow-lite:2.16.1")
+    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     testImplementation("junit:junit:4.13.2")
 }

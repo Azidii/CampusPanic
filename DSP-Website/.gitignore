@@ -7,6 +7,9 @@ node_modules/
 dist/
 build/
 
+# Android application downloads are generated build outputs.
+public/downloads/*.apk
+
 # Environment files
 .env
 .env.local

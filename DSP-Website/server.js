@@ -16,7 +16,9 @@ import phoneRoutes from './routes/phoneRoutes.js';
 import liveRoutes from './routes/liveRoutes.js';
 import espRoutes from './routes/espRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
+import audioRoutes from './routes/audioRoutes.js';
 import { videoService } from './services/videoService.js';
+import { audioService } from './services/audioService.js';
 
 // Route Imports
 import viewRoutes from './routes/viewRoutes.js';
@@ -53,9 +55,10 @@ app.use(
   })
 );
 
-// Camera JPEGs use their own authentication, body limit and transmission limiter.
+// Camera JPEGs and Audio chunks use their own authentication, body limit and transmission limiters.
 app.use(cookieParser());
 app.use('/api/camera', phoneRoutes);
+app.use('/api/audio', audioRoutes);
 app.use('/media/nodes', mediaRoutes);
 
 // Parsers
@@ -84,7 +87,11 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     service: 'CampusPanic Alert Security Gateway',
-    environment: config.env
+    environment: config.env,
+    workers: {
+      video: { ready: videoService.ready, message: videoService.message },
+      audio: { ready: audioService.ready, message: audioService.message }
+    }
   });
 });
 
@@ -145,6 +152,7 @@ const startServer = async () => {
     await ensureInitialAdmin();
     startRetentionCleaner();
     videoService.start();
+    audioService.start();
 
     server.listen(config.port, process.env.HOST || '0.0.0.0', () => {
       console.log(`=======================================================`);
@@ -165,7 +173,7 @@ let shuttingDown = false;
 async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
-  await videoService.stop();
+  await Promise.allSettled([videoService.stop(), audioService.stop()]);
   server.close();
   process.exit(0);
 }

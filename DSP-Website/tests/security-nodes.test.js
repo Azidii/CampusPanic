@@ -9,6 +9,7 @@ import { existsSync } from 'node:fs';
 import { setTimeout as delay } from 'node:timers/promises';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import '../config/env.js';
 
 async function waitFor(fn, ms = 10000) {
   const deadline = Date.now() + ms;
@@ -23,6 +24,8 @@ async function freePort() {
 test('security-node gateway with real model and isolated test database', { timeout: 90000 }, async t => {
   process.env.NODE_ENV = 'test';
   process.env.JWT_SECRET = 'isolated-integration-test-secret';
+  process.env.DEVICE_API_KEY = 'isolated-video-integration-test-device';
+  process.env.ADMIN_PASSWORD = 'isolated-video-integration-test-admin';
   process.env.VIDEO_WORKER_PORT = String(await freePort());
   // On another machine use VIDEO_PYTHON/VIDEO_MODEL_PATH as documented in README.md.
   const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');

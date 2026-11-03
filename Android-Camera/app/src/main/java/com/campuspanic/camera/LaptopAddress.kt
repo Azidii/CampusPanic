@@ -21,7 +21,7 @@ object LaptopAddress {
             (octets[0] == 192 && octets[1] == 168) || (octets[0] == 169 && octets[1] == 254)) {
             "Use the laptop's private Wi-Fi address. Public addresses are disabled."
         }
-        val port = if (uri.port == -1) 5055 else uri.port
+        val port = if (uri.port == -1) 5000 else uri.port
         require(port in 1..65535) { "The port must be between 1 and 65535." }
         return "http://${octets.joinToString(".")}:$port"
     }

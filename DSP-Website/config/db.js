@@ -1,13 +1,15 @@
 import mongoose from 'mongoose';
 import { config } from './config.js';
+import { configureMongoDns, mongoConnectionError, validateMongoUri } from './mongoConfig.js';
 
 export const connectDB = async () => {
-  if (/<[^>]+>/.test(config.mongoUri)) throw new Error('Replace MongoDB placeholders in DSP-Website/.env.');
   try {
+    validateMongoUri(config.mongoUri);
+    configureMongoDns();
     await mongoose.connect(config.mongoUri, { serverSelectionTimeoutMS: 10000 });
     console.log('[Database] Connected to persistent MongoDB storage.');
-  } catch {
-    throw new Error('Cannot connect to MongoDB. Start local MongoDB or configure MONGODB_URI for Atlas. Temporary storage is disabled so saved security nodes are preserved.');
+  } catch (error) {
+    throw mongoConnectionError(error);
   }
 };
 export const disconnectDB = async () => { await mongoose.disconnect(); };
