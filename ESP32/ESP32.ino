@@ -6,10 +6,19 @@
 #include <mbedtls/sha256.h>
 #include <esp_system.h>
 #include <atomic>
+#include <Wire.h>
+#include <string.h>
+#include <stdio.h>
+
+struct ManualEvent;
+String makePacket(const ManualEvent &event);
+void buildOledFrame();
 
 constexpr uint8_t BUTTON_PINS[] = {27, 26, 25};
+// Latest pasted sketch uses GPIO23 for MEDICAL. The supplied PCB routes it
+// to GPIO33; change the middle value to 33 if you are using that PCB trace.
 constexpr uint8_t LED_PINS[] = {32, 23, 14};
-const char *const EMERGENCIES[] = {"FIRE", "MEDICAL", "ACTIVE SHOOTER"};
+const char *const EMERGENCIES[] = {"FIRE", "MEDICAL", "SHOOTING"};
 constexpr uint8_t SMOKE_ANALOG_PIN = 34;
 constexpr uint8_t SMOKE_DIGITAL_PIN = 35;
 constexpr uint8_t VOICE_RX_PIN = 16; // VR3 TXD through the schematic's divider.
@@ -17,15 +26,182 @@ constexpr uint8_t VOICE_TX_PIN = 17; // To VR3 RXD.
 constexpr uint32_t VOICE_BAUD = 9600;
 constexpr bool SMOKE_ACTIVE_LOW = true; // Confirm your module's D0 polarity.
 
-// OLED example only: confirm the actual controller, dimensions and address first.
-// #include <Wire.h>
-// #include <Adafruit_GFX.h>
-// #include <Adafruit_SSD1306.h>
-// Adafruit_SSD1306 display(128, 64, &Wire, -1);
-// In setup(): Wire.begin(21, 22); display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-// To display: display.clearDisplay(); display.setTextSize(1);
-// display.setTextColor(SSD1306_WHITE); display.setCursor(0, 0);
-// display.println("Campus Panic"); display.display();
+// OLED mode: 1=SSD1306 128x64, 2=SH1106 128x64, 3=SSD1306 128x32.
+// The photo suggests 128x64; exact controller still needs confirmation.
+constexpr uint8_t DEFAULT_OLED_PROFILE = 2;
+uint8_t oledProfile = DEFAULT_OLED_PROFILE;
+uint8_t oledHeight = 64;
+uint8_t oledAddress = 0;
+bool oledReady = false;
+bool oledDirty = true;
+bool oledSending = false;
+uint8_t oledPage = 0;
+uint8_t oledColumn = 0;
+uint32_t lastOledUpdate = 0;
+uint8_t oledFrame[1024] = {};
+
+bool oledCommands(const uint8_t *data, size_t length) {
+  Wire.beginTransmission(oledAddress);
+  Wire.write(uint8_t(0x00));
+  Wire.write(data, length);
+  return Wire.endTransmission() == 0;
+}
+
+// Built-in 5x7 font. No external display libraries.
+const char OLED_CHARS[] = " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789:/-";
+const uint8_t OLED_FONT[][5] = {
+  {0,0,0,0,0},
+  {0x7E,0x11,0x11,0x11,0x7E}, // A
+  {0x7F,0x49,0x49,0x49,0x36}, // B
+  {0x3E,0x41,0x41,0x41,0x22}, // C
+  {0x7F,0x41,0x41,0x22,0x1C}, // D
+  {0x7F,0x49,0x49,0x49,0x41}, // E
+  {0x7F,0x09,0x09,0x09,0x01}, // F
+  {0x3E,0x41,0x49,0x49,0x7A}, // G
+  {0x7F,0x08,0x08,0x08,0x7F}, // H
+  {0x00,0x41,0x7F,0x41,0x00}, // I
+  {0x20,0x40,0x41,0x3F,0x01}, // J
+  {0x7F,0x08,0x14,0x22,0x41}, // K
+  {0x7F,0x40,0x40,0x40,0x40}, // L
+  {0x7F,0x02,0x0C,0x02,0x7F}, // M
+  {0x7F,0x04,0x08,0x10,0x7F}, // N
+  {0x3E,0x41,0x41,0x41,0x3E}, // O
+  {0x7F,0x09,0x09,0x09,0x06}, // P
+  {0x3E,0x41,0x51,0x21,0x5E}, // Q
+  {0x7F,0x09,0x19,0x29,0x46}, // R
+  {0x46,0x49,0x49,0x49,0x31}, // S
+  {0x01,0x01,0x7F,0x01,0x01}, // T
+  {0x3F,0x40,0x40,0x40,0x3F}, // U
+  {0x1F,0x20,0x40,0x20,0x1F}, // V
+  {0x3F,0x40,0x38,0x40,0x3F}, // W
+  {0x63,0x14,0x08,0x14,0x63}, // X
+  {0x07,0x08,0x70,0x08,0x07}, // Y
+  {0x61,0x51,0x49,0x45,0x43}, // Z
+  {0x3E,0x51,0x49,0x45,0x3E}, // 0
+  {0x00,0x42,0x7F,0x40,0x00}, // 1
+  {0x42,0x61,0x51,0x49,0x46}, // 2
+  {0x21,0x41,0x45,0x4B,0x31}, // 3
+  {0x18,0x14,0x12,0x7F,0x10}, // 4
+  {0x27,0x45,0x45,0x45,0x39}, // 5
+  {0x3C,0x4A,0x49,0x49,0x30}, // 6
+  {0x01,0x71,0x09,0x05,0x03}, // 7
+  {0x36,0x49,0x49,0x49,0x36}, // 8
+  {0x06,0x49,0x49,0x29,0x1E}, // 9
+  {0x00,0x36,0x36,0x00,0x00}, // :
+  {0x20,0x10,0x08,0x04,0x02}, // /
+  {0x08,0x08,0x08,0x08,0x08}  // -
+};
+static_assert(sizeof(OLED_FONT) / sizeof(OLED_FONT[0]) == sizeof(OLED_CHARS)-1,
+              "OLED font mismatch");
+
+void oledText(uint8_t row, const char *message) {
+  if (row >= oledHeight / 8) return;
+  uint8_t x = 0;
+  while (*message && x <= 122) {
+    const char *found = strchr(OLED_CHARS, *message++);
+    const size_t index = found ? size_t(found - OLED_CHARS) : 0;
+    for (uint8_t col = 0; col < 5; ++col) {
+      oledFrame[uint16_t(row) * 128 + x + col] = OLED_FONT[index][col];
+    }
+    x += 6;
+  }
+}
+
+void updateOled() { oledDirty = true; }
+
+void beginOled() {
+  oledReady = false;
+  oledSending = false;
+  oledAddress = 0;
+  oledHeight = oledProfile == 3 ? 32 : 64;
+  if (!Wire.begin(21, 22, 100000)) {
+    Serial.println("OLED: I2C startup failed.");
+    return;
+  }
+  Wire.setTimeOut(50);
+  delay(100);
+  // Only probe OLED addresses, keeping retries short.
+  const uint8_t addresses[] = {0x3C, 0x3D};
+  for (uint8_t address : addresses) {
+    Wire.beginTransmission(address);
+    if (Wire.endTransmission() == 0) {
+      oledAddress = address;
+      break;
+    }
+  }
+  if (!oledAddress) {
+    Serial.println("OLED: no response at 0x3C/0x3D; check SDA21/SCL22, 3.3V/GND. Send o to retry.");
+    return;
+  }
+  const bool sh1106 = oledProfile == 2;
+  const uint8_t init[] = {
+    0xAE, 0xD5, 0x80, 0xA8, uint8_t(oledHeight-1),
+    0xD3, 0x00, 0x40, 0xA1, 0xC8,
+    0xDA, uint8_t(oledHeight == 32 ? 0x02 : 0x12),
+    0x81, 0x8F, 0xD9, uint8_t(sh1106 ? 0x1F : 0xF1),
+    0xDB, 0x40, 0xA4, 0xA6
+  };
+  bool ok = oledCommands(init, sizeof(init));
+  if (sh1106) {
+    const uint8_t power[] = {0xAD, 0x8B, 0x33};
+    ok = ok && oledCommands(power, sizeof(power));
+  } else {
+    const uint8_t power[] = {0x8D, 0x14, 0x20, 0x02, 0x2E};
+    ok = ok && oledCommands(power, sizeof(power));
+  }
+  if (ok) {
+    delay(100);
+    const uint8_t on[] = {0xAF};
+    ok = oledCommands(on, sizeof(on));
+  }
+  oledReady = ok;
+  oledDirty = true;
+  Serial.printf("OLED profile %u: %s 128x%u at 0x%02X; commands %s.\n",
+    unsigned(oledProfile), sh1106 ? "SH1106" : "SSD1306",
+    unsigned(oledHeight), unsigned(oledAddress), ok ? "acknowledged" : "FAILED");
+}
+
+void serviceOled() {
+  if (!oledReady) return;
+  if (!oledSending) {
+    if (!oledDirty && uint32_t(millis()-lastOledUpdate) < 500) return;
+    oledDirty = false;
+    buildOledFrame();
+    oledPage = 0;
+    oledColumn = 0;
+    oledSending = true;
+  }
+  // Send only 16 data bytes per loop so smoke/buttons stay responsive.
+  bool ok = true;
+  if (oledColumn == 0) {
+    const uint8_t column = oledProfile == 2 ? 2 : 0;
+    const uint8_t position[] = {
+      uint8_t(0xB0 | oledPage), uint8_t(column & 0x0F),
+      uint8_t(0x10 | (column >> 4))
+    };
+    ok = oledCommands(position, sizeof(position));
+  }
+  if (ok) {
+    Wire.beginTransmission(oledAddress);
+    Wire.write(uint8_t(0x40));
+    Wire.write(oledFrame + uint16_t(oledPage)*128 + oledColumn, 16);
+    ok = Wire.endTransmission() == 0;
+  }
+  if (!ok) {
+    oledReady = false;
+    oledSending = false;
+    Serial.println("OLED: transfer failed; physical inputs still run. Send o to retry.");
+    return;
+  }
+  oledColumn += 16;
+  if (oledColumn == 128) {
+    oledColumn = 0;
+    if (++oledPage >= oledHeight / 8) {
+      oledSending = false;
+      lastOledUpdate = millis();
+    }
+  }
+}
 
 struct DebouncedInput {
   bool candidate = false;
@@ -48,8 +224,10 @@ struct DebouncedInput {
 HardwareSerial voice(2);
 DebouncedInput buttons[3];
 DebouncedInput smoke;
-bool latched[3] = {false, false, false};
-bool smokeArmed = false;
+bool latched[3] = {false, false, false}; // Actual combined LED states.
+bool manualAlerts[3] = {false, false, false}; // Toggled by physical buttons.
+bool smokeArmed = false; // Arm with a only after MQ-2 warm-up/calibration.
+bool smokeAlarm = false; // Separate from the manual fire button/LED test.
 bool voiceDiagnostics = false;
 
 const char *const WEBSITE_TYPES[] = {"fire", "medical", "gunshot"};
@@ -372,6 +550,13 @@ void setLed(uint8_t index, bool on) {
   digitalWrite(LED_PINS[index], (on == LED_ACTIVE_HIGH) ? HIGH : LOW);
 }
 
+void refreshLeds() {
+  for (uint8_t i = 0; i < 3; ++i) {
+    setLed(i, manualAlerts[i] || (i == 0 && smokeAlarm));
+  }
+  updateOled();
+}
+
 void selfCheck() {
   DebouncedInput input;
   assert(!input.rose(true, 0, 35));
@@ -380,9 +565,9 @@ void selfCheck() {
   assert(input.rose(true, 55, 35));
   assert(!input.rose(true, 100, 35)); // Holding must not repeat.
   assert(!input.rose(false, 110, 35));
-  assert(input.stable); // Release bounce keeps the LED on.
+  assert(input.stable); // Release bounce must not create a new press edge.
   assert(!input.rose(false, 145, 35));
-  assert(!input.stable); // Debounced release turns the LED off.
+  assert(!input.stable); // Debounced release does not toggle the manual alert.
   assert(!input.rose(true, UINT32_MAX - 10, 35));
   assert(input.rose(true, 25, 35)); // millis() wraparound.
   assert(jsonQuote("A\"B\\C\n") == "\"A\\\"B\\\\C\\u000a\"");
@@ -400,6 +585,36 @@ bool smokeActive() {
   return digitalRead(SMOKE_DIGITAL_PIN) == (SMOKE_ACTIVE_LOW ? LOW : HIGH);
 }
 
+void buildOledFrame() {
+  memset(oledFrame, 0, sizeof(oledFrame));
+  if (oledHeight == 32) {
+    char line[22];
+    snprintf(line, sizeof(line), "FIRE:%s MED:%s", latched[0] ? "ON" : "OFF", latched[1] ? "ON" : "OFF");
+    oledText(0, line);
+    snprintf(line, sizeof(line), "SHOOT:%s %s", latched[2] ? "ON" : "OFF", smokeArmed ? "ARMED" : "DISARMED");
+    oledText(1, line);
+    oledText(2, smokeAlarm ? "SMOKE/GAS ALERT" : (smokeActive() ? "INPUT ACTIVE" : "INPUT INACTIVE"));
+    snprintf(line, sizeof(line), "RAW:%d%s", analogRead(SMOKE_ANALOG_PIN), smokeArmed ? "" : " SEND A");
+    oledText(3, line);
+    return;
+  }
+  oledText(0, "SMOKE DETECTOR");
+  oledText(1, smokeArmed ? "ARMED" : "DISARMED: SEND A");
+  oledText(2, smokeAlarm ? "SMOKE/GAS ALERT" :
+              (smokeActive() ? "INPUT ACTIVE" : "INPUT INACTIVE"));
+  char raw[22];
+  snprintf(raw, sizeof(raw), "RAW: %d", analogRead(SMOKE_ANALOG_PIN));
+  oledText(3, raw);
+  if (oledHeight == 64) {
+    oledText(4, latched[0] ? "FIRE: ON" : "FIRE: OFF");
+    oledText(5, latched[1] ? "MEDICAL: ON" : "MEDICAL: OFF");
+    oledText(6, latched[2] ? "SHOOTING: ON" : "SHOOTING: OFF");
+    oledText(7, !websiteReady ? "NET: NOT CONFIGURED" :
+                (WiFi.status() != WL_CONNECTED ? "NET: OFFLINE" :
+                 (devicePaired.load() ? "NET: PAIRED" : "NET: PAIR ON WEBSITE")));
+  }
+}
+
 void alert(uint8_t index, const char *source) {
   setLed(index, true);
   Serial.printf("\n*** %s ALERT ***\nSource: %s\nLED %u GPIO%u: commanded ON (%s)\n",
@@ -409,26 +624,36 @@ void alert(uint8_t index, const char *source) {
 
 void printStatus() {
   Serial.println("\n-------- CAMPUS PANIC --------");
-  Serial.printf("Fire: %s | Medical: %s | Active shooter: %s\n",
+  Serial.printf("Fire: %s | Medical: %s | Shooting: %s\n",
                 latched[0] ? "ALERT" : "idle", latched[1] ? "ALERT" : "idle",
                 latched[2] ? "ALERT" : "idle");
   Serial.printf("Smoke input: %s | Detection: %s\n",
                 smokeActive() ? "threshold active" : "threshold inactive",
                 smokeArmed ? "armed" : "disarmed - warm up/calibrate, then send a");
+  Serial.printf("Smoke raw ADC: %d | Smoke alarm: %s\n", analogRead(SMOKE_ANALOG_PIN), smokeAlarm ? "LATCHED" : "idle");
   Serial.println("Voice module: UART enabled | CNN audio: unavailable with VR3");
   Serial.printf("Website: %s | ESP32: %s | Audio: %s\n",
                 websiteReady ? (WiFi.status() == WL_CONNECTED ? "Wi-Fi connected" : "waiting for Wi-Fi") : "not configured/available",
                 devicePaired ? "PAIRED" : "not paired; use the printed PIN", audioMuted ? "MUTED" : "unmuted (VR3 raw audio unavailable)");
   Serial.println("------------------------------");
+  updateOled();
 }
 
 void printHelp() {
   Serial.println("Campus Panic | Serial Monitor: 115200 baud");
-  Serial.println("BTN1=fire/LED1; BTN2=medical/LED2; BTN3=active_shooter/LED3");
+  Serial.printf("Buttons: FIRE GPIO%u/LED%u, MEDICAL GPIO%u/LED%u, SHOOTING GPIO%u/LED%u.\n",
+    unsigned(BUTTON_PINS[0]), unsigned(LED_PINS[0]), unsigned(BUTTON_PINS[1]),
+    unsigned(LED_PINS[1]), unsigned(BUTTON_PINS[2]), unsigned(LED_PINS[2]));
+  Serial.println("Each button turns its assigned local alert ON. Use c to clear local alerts.");
+  Serial.println("Buttons and smoke light the LEDs locally and send website events.");
   Serial.println("Commands: h=help, s=status, c=clear LEDs, a=arm/disarm smoke, v=query VR3");
-  Serial.println("LED wiring test: send 1, 2, or 3 to turn that LED ON; c turns LEDs OFF.");
+  Serial.println("LED wiring test: 1/2/3 toggle that manual LED state; no website event. c clears local alerts when allowed.");
+  Serial.println("Website events are sent on physical button ON only; local OFF does not resolve a website alert.");
   Serial.println("Smoke starts DISARMED: warm up/condition and calibrate the MQ-2 first.");
-  Serial.println("Display updates on alerts/smoke changes; send s to refresh status.");
+  Serial.println("OLED: o=retry; 4=SSD1306 128x64, 5=SH1106 128x64, 6=SSD1306 128x32.");
+  Serial.println("OLED uses no external display libraries. Set DEFAULT_OLED_PROFILE to keep the working mode after reset.");
+  Serial.println("Smoke: D0 GPIO35, active LOW by default. Adjust MQ-2 module threshold after warm-up.");
+  Serial.println("Smoke alarm latches until c; it cannot clear while the armed input remains active.");
   Serial.println("USB setup: fill ESP32/.env and run provision.ps1 with Serial Monitor closed.");
   Serial.println("Pair from the node's Audio section using the ESP32 PIN. Send r to refresh an unpaired PIN.");
 }
@@ -444,23 +669,33 @@ void readTerminal() {
         else { refreshPinRequested = true; Serial.println("PIN refresh requested; it will be announced when Wi-Fi is available."); }
         break;
       case 'h': printHelp(); break;
+      case 'o': beginOled(); break;
+      case '4':
+      case '5':
+      case '6':
+        oledProfile = uint8_t(command - '3');
+        beginOled();
+        break;
       case 's': printStatus(); break;
       case '1':
       case '2':
       case '3': {
         const uint8_t index = uint8_t(command - '1');
-        setLed(index, true);
-        Serial.printf("LED%u GPIO%u commanded ON (output %s); no website alert for this wiring test.\n",
-                      unsigned(index + 1), unsigned(LED_PINS[index]), LED_ACTIVE_HIGH ? "HIGH" : "LOW");
+        manualAlerts[index] = !manualAlerts[index];
+        refreshLeds();
+        Serial.printf("LED%u GPIO%u: %s; serial wiring test only.\n",
+          unsigned(index+1), unsigned(LED_PINS[index]), latched[index] ? "ON" : "OFF");
         break;
       }
-      case 'c':
-        for (uint8_t i = 0; i < 3; ++i) {
-          setLed(i, false);
-        }
-        Serial.println("LEDs cleared. An active, armed smoke input will re-trigger.");
+      case 'c': {
+        const bool keepSmoke = smokeArmed && (smokeActive() || smoke.stable);
+        for (uint8_t i = 0; i < 3; ++i) manualAlerts[i] = false;
+        if (!keepSmoke) smokeAlarm = false;
+        refreshLeds();
+        Serial.println(smokeAlarm ? "Smoke alarm retained: armed input is still active." : "Local alerts and LEDs cleared.");
         printStatus();
         break;
+      }
       case 'a':
         smokeArmed = !smokeArmed;
         smoke = DebouncedInput();
@@ -494,6 +729,7 @@ void readVoice() {
 
 void setup() {
   Serial.begin(115200);
+  delay(500);
   selfCheck();
   loadConfiguration();
   for (uint8_t i = 0; i < 3; ++i) {
@@ -507,6 +743,7 @@ void setup() {
   analogReadResolution(12);
   analogSetPinAttenuation(SMOKE_ANALOG_PIN, ADC_11db);
   voice.begin(VOICE_BAUD, SERIAL_8N1, VOICE_RX_PIN, VOICE_TX_PIN);
+  beginOled();
   if (preferencesReady && preferences.getBool("setup-next", false)) beginProvisioning();
   else startWebsite();
   printHelp();
@@ -517,21 +754,25 @@ void loop() {
   readTerminal();
   const uint32_t now = millis();
   for (uint8_t i = 0; i < 3; ++i) {
-    const bool wasPressed = buttons[i].stable;
     if (buttons[i].rose(digitalRead(BUTTON_PINS[i]) == LOW, now, 35)) {
-      alert(i, "manual button");
+      manualAlerts[i] = true;
+      refreshLeds();
+      alert(i, "manual button ON");
       queuePhysicalAlert(i, false);
+      printStatus();
     }
-    if (wasPressed && !buttons[i].stable) setLed(i, false);
   }
   // D0 is a smoke/gas threshold signal, not confirmation of a fire.
   const bool previousSmoke = smoke.stable;
   smoke.rose(smokeActive(), now, 500);
-  if (smokeArmed && smoke.stable && !latched[0]) {
+  if (smokeArmed && smoke.stable && !smokeAlarm) {
+    smokeAlarm = true;
     alert(0, "smoke sensor (suspected fire)");
     queuePhysicalAlert(0, true);
   }
   if (previousSmoke != smoke.stable) printStatus();
   readVoice();
+  serviceOled();
   delay(1);
 }
+

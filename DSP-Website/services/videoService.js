@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { config } from '../config/config.js';
 import { describeAudio } from './espDevices.js';
 import { audioService } from './audioService.js';
+import { attachThreatState, recordVisionThreat } from './threatState.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const videoDir = path.join(root, 'Video-Live');
@@ -47,7 +48,7 @@ export const videoService = {
     this.child.stderr.on('data', () => {});
     const lost = () => {
       this.ready = false;
-      this.sessions.clear();
+      for (const session of this.sessions.values()) session.workerConnected = false;
       this.child = null;
       this.message = 'Model service unavailable. Check the Python environment, model path and worker port.';
       if (!this.stopping) console.warn('[Video] ' + this.message);
@@ -60,7 +61,7 @@ export const videoService = {
       try {
         const response = await this.request('/health');
         this.ready = response.ok;
-        if (this.ready) this.message = 'Model service ready';
+        if (this.ready) { this.message = 'Model service ready'; await this.states(); }
       } catch { this.ready = false; } finally { this.checking = false; }
     }, 1000);
     this.healthTimer.unref();
@@ -85,10 +86,22 @@ export const videoService = {
   async states() {
     if (!this.ready) return {};
     try {
+      const sessions = new Map(this.sessions);
       const response = await this.request('/status');
       if (!response.ok) return {};
-      return (await response.json()).nodes;
+      const states = (await response.json()).nodes;
+      await this.recordWorkerThreats(states, sessions);
+      return states;
     } catch { return {}; }
+  },
+  async recordWorkerThreats(states, expectedSessions = new Map(this.sessions)) {
+    for (const [nodeId, state] of Object.entries(states || {})) {
+      const session = this.sessions.get(nodeId);
+      if (!session || session !== expectedSessions.get(nodeId) || !session.workerConnected ||
+          Date.now() - session.activity >= 5000 || !state.live ||
+          !Number.isFinite(state.frameAgeMs) || state.frameAgeMs < 0 || state.frameAgeMs >= 3000) continue;
+      await recordVisionThreat(nodeId, state.detections);
+    }
   },
   async describe(nodes) {
     const states = await this.states();
@@ -98,10 +111,18 @@ export const videoService = {
       const state = states[node.nodeId];
       const session = this.sessions.get(node.nodeId);
       // A revoked session can never make a deleted/re-paired node look live.
-      node.video = session && state ? state : { live: false, cameraConnected: false,
-        status: 'offline', detections: [], audioStatus: 'not_configured' };
+      const connected = Boolean(session && Date.now() - session.activity < 5000);
+      if (session && !connected) { session.lastFrame = null; session.telemetry = null; session.clientDetections = []; }
+      const rawLive = connected && session.lastFrame && Date.now() - session.frameAt < 3000;
+      node.video = connected && session.workerConnected && state ? { ...state, live: Boolean(state.live || rawLive), cameraConnected: connected, inferenceAvailable: Boolean(state.live) } : {
+        live: Boolean(rawLive), cameraConnected: connected,
+        status: rawLive ? 'live' : connected ? 'processing' : 'offline',
+        detections: [], audioStatus: 'not_configured', inferenceAvailable: false
+      };
+      node.cameraTelemetry = connected ? session.telemetry : null;
       // Attach client-side detections if available
-      if (session?.clientDetections?.detections?.length) {
+      if (connected && session?.clientDetections?.detections?.length &&
+          Date.now() - session.clientDetections.timestamp < 3000) {
         node.video.clientDetections = session.clientDetections.detections;
         if (!node.video.detections.length) {
           node.video.detections = session.clientDetections.detections;
@@ -112,11 +133,11 @@ export const videoService = {
       return node;
     }));
 
-    return described.map(node => {
+    return attachThreatState(described.map(node => {
       node.phoneAudio = audioService.getNodeAudio(node.nodeId);
       node.audioCNN = node.phoneAudio;
       return node;
-    });
+    }));
   },
   addresses() {
     const addresses = Object.values(os.networkInterfaces()).flat().filter(network => network &&

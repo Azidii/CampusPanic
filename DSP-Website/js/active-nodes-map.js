@@ -7,43 +7,80 @@ document.addEventListener('DOMContentLoaded', () => {
   }).addTo(map);
   const group = L.featureGroup().addTo(map);
   let fitted = false;
+  let seen = null;
+  const label = alert => alert.emergencyType === 'gunshot' ? 'SHOOTING' :
+    alert.triggerSource === 'smoke_sensor' ? 'SMOKE / FIRE' : alert.emergencyType.toUpperCase();
+  const hardwareText = node => node?.hud?.hardware?.connected ? 'ESP32 online · buttons and smoke reporting' :
+    node?.audio?.paired ? 'ESP32 paired · offline' : 'No ESP32 paired to this node';
+
   function render(nodes, alerts) {
     group.clearLayers();
     const unresolved = alerts.filter(alert => alert.status !== 'resolved');
-    const count = document.getElementById('hotspotCount');
-    if (count) count.textContent = `Active Incident Hotspots: ${new Set(unresolved.map(a => a.nodeId)).size}`;
-    const sidebar = document.querySelector('.threat-sidebar-list');
-    if (sidebar) {
-      [...sidebar.children].slice(1).forEach(child => child.remove());
-      for (const alert of unresolved) {
-        const card = document.createElement('div'); card.className = 'threat-hotspot-card';
-        const title = document.createElement('strong'); title.textContent = `${alert.emergencyType.toUpperCase()} · ${alert.room}`;
-        const location = document.createElement('p'); location.textContent = `${alert.building} (${alert.nodeId})`;
-        const status = document.createElement('p'); status.textContent = alert.threatStatus.replace(/_/g, ' ');
-        const link = document.createElement('a'); link.className = 'btn btn-sm btn-danger'; link.textContent = 'Inspect Feed →';
-        link.href = `/cam-view?alertId=${encodeURIComponent(alert._id)}`;
-        card.append(title, location, status, link); sidebar.append(card);
-      }
-      if (!unresolved.length) { const empty = document.createElement('p'); empty.textContent = 'No active emergency incidents currently reported.'; sidebar.append(empty); }
+    const byNode = new Map(nodes.map(node => [node.nodeId, node]));
+    const activeIds = new Set(unresolved.map(alert => alert.nodeId));
+    for (const node of nodes) {
+      if (Object.values(node.hud?.threats || {}).some(value => value === true)) activeIds.add(node.nodeId);
     }
-    for (const node of nodes.filter(n => n.status === 'active')) {
-      if (!Number.isFinite(node.lat) || !Number.isFinite(node.lng)) continue;
-      const alert = alerts.find(a => a.nodeId === node.nodeId && a.status !== 'resolved');
-      if (!alert) continue;
-      const kind = alert.threatStatus === 'verified_threat' ? 'pin-gunshot-verified' :
-        alert.threatStatus === 'unverified_audio_trigger' ? 'pin-unverified-audio' : `pin-${alert.emergencyType}`;
+    document.getElementById('hotspotCount').textContent = `Active Incident Hotspots: ${activeIds.size}`;
+    const banner = document.getElementById('threatLiveBanner');
+    banner.dataset.alert = activeIds.size > 0;
+    banner.textContent = activeIds.size ? `${activeIds.size} active threat location${activeIds.size === 1 ? '' : 's'} · Camera detections and ESP32 button/smoke reports are monitored here.` : 'LIVE · No active threats reported.';
+
+    const ids = new Set(unresolved.map(alert => String(alert._id)));
+    if (seen) {
+      const incoming = unresolved.filter(alert => !seen.has(String(alert._id)) && ['gunshot', 'fire'].includes(alert.emergencyType));
+      if (incoming.length) window.showToast(`${label(incoming[0])}: ${incoming[0].building}, ${incoming[0].room}`, 'error', 8000);
+    }
+    seen = ids;
+
+    const sidebar = document.querySelector('.threat-sidebar-list');
+    [...sidebar.children].slice(1).forEach(child => child.remove());
+    for (const nodeId of activeIds) {
+      const node = byNode.get(nodeId);
+      const incidents = unresolved.filter(alert => alert.nodeId === nodeId);
+      const first = incidents[0];
+      const card = document.createElement('div');
+      card.className = 'threat-hotspot-card';
+      const heading = document.createElement('strong');
+      heading.textContent = incidents.length ? [...new Set(incidents.map(label))].join(' / ') : Object.entries(node?.hud?.threats || {}).filter(([, value]) => value === true).map(([key]) => key.toUpperCase()).join(' / ') || 'HARDWARE ALERT';
+      const location = document.createElement('p');
+      location.textContent = `${node?.building || first?.building || nodeId}, ${node?.room || first?.room || ''}`;
+      const hardware = document.createElement('p');
+      hardware.className = 'hardware-state';
+      hardware.textContent = hardwareText(node);
+      const link = document.createElement('a');
+      link.className = 'btn btn-sm btn-danger'; link.textContent = 'Inspect Feed →';
+      link.href = `/cam-view?nodeId=${encodeURIComponent(nodeId)}${first ? `&alertId=${encodeURIComponent(first._id)}` : ''}`;
+      card.append(heading, location, hardware, link);
+      sidebar.append(card);
+
+      if (!Number.isFinite(node?.lat) || !Number.isFinite(node?.lng)) {
+        const note = document.createElement('p');
+        note.textContent = 'Map location not set. Add coordinates in Security Nodes.';
+        card.append(note);
+        continue;
+      }
+      const fire = incidents.some(alert => alert.emergencyType === 'fire') || node.hud?.threats?.fire;
+      const kind = fire ? 'pin-fire' : incidents.some(alert => alert.emergencyType === 'gunshot') || node.hud?.threats?.shooting ? 'pin-gunshot-verified' : 'pin-medical';
       const marker = L.marker([node.lat, node.lng], { icon: L.divIcon({
         className: `threat-pulse-pin ${kind}`, iconSize: [24, 24], iconAnchor: [12, 12]
       }) }).addTo(group);
       const popup = document.createElement('div');
-      const title = document.createElement('strong'); title.textContent = `${alert.emergencyType.toUpperCase()}: ${node.building}, ${node.room}`;
-      const link = document.createElement('a'); link.className = 'btn btn-sm btn-danger'; link.textContent = 'Open incident camera →';
-      link.href = `/cam-view?nodeId=${encodeURIComponent(node.nodeId)}&alertId=${encodeURIComponent(alert._id)}`;
-      popup.append(title, document.createElement('br'), link); marker.bindPopup(popup);
+      const title = document.createElement('strong'); title.textContent = heading.textContent;
+      const status = document.createElement('p'); status.textContent = hardwareText(node);
+      const camera = document.createElement('a'); camera.href = link.href; camera.textContent = 'Open incident camera →';
+      popup.append(title, status, camera);
+      marker.bindPopup(popup);
+    }
+    if (!activeIds.size) {
+      const empty = document.createElement('p'); empty.textContent = 'No active emergency incidents currently reported.'; sidebar.append(empty);
     }
     if (!fitted && group.getLayers().length) { map.fitBounds(group.getBounds().pad(.3), { maxZoom: 17 }); fitted = true; }
   }
   const initial = JSON.parse(document.getElementById('activeNodesData').textContent);
   render(initial.activeNodes, initial.activeAlerts);
-  window.addEventListener('campus:state', ({ detail }) => render(detail.nodes, detail.alerts));
+  window.addEventListener('campus:state', ({ detail }) => render(detail.nodes, detail.activeAlerts || detail.alerts));
+  window.addEventListener('campus:offline', () => {
+    document.getElementById('threatLiveBanner').textContent = 'Connection interrupted · Threat status may be out of date.';
+  });
 });

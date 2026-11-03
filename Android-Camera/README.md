@@ -104,3 +104,8 @@ port, explicit standalone ports and rejection of public or ambiguous addresses.
 A real-phone check is still needed after a build: download and install the APK,
 pair with a disposable node, confirm live video and microphone classifications,
 then stop the app and verify that the feed becomes inactive.
+
+
+## Version 0.3.0 camera HUD
+
+The camera preview now overlays actual battery/network status and short Smoke, Fire, Medical and Shooting alarm states from the paired node. The same status appears on the web CCTV feeds. Unknown or stale values are shown as unavailable. Android gun detections and laptop inference create web incidents; they do not control ESP32 LEDs. The ESP32 reports its physical buttons and MQ-2 smoke events to the website using the original pairing and alert API. Direct camera viewing also works while laptop inference is unavailable.

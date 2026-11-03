@@ -123,6 +123,11 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       }
     }
 
+    // Free the unique active camera-event key when an incident is resolved.
+    if (newStatus === 'resolved' && ['camera_detection', 'audio_detection'].includes(alert.triggerSource)) {
+      alert.deviceEventKey = undefined;
+      alert.markModified('deviceEventKey');
+    }
     await alert.save();
 
     const unresolvedCount = await Alert.countDocuments({

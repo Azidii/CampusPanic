@@ -2,6 +2,13 @@ package com.campuspanic.camera
 
 import android.Manifest
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.BatteryManager
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
+import android.widget.FrameLayout
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -56,6 +63,25 @@ class MainActivity : ComponentActivity() {
     private lateinit var audioBadge: TextView
     private lateinit var cnnBadge: TextView
     private lateinit var alertBanner: TextView
+    private lateinit var hudTop: TextView
+    private lateinit var hudBottom: TextView
+    private val hudHandler = Handler(Looper.getMainLooper())
+    private val hudThreats = mutableMapOf<String, Boolean?>()
+    @Volatile private var lastGatewayAt = 0L
+    private var lastHudAt = 0L
+    private var lastGunAt = 0L
+    private var lastAudioAt = 0L
+    private var audioAlert = false
+    private var audioClass = ""
+    private var hudAlarm = false
+    @Volatile private var detectionUploading = false
+    private var nextDetectionAt = 0L
+    private val hudTick = object : Runnable {
+        override fun run() {
+            refreshHud()
+            hudHandler.postDelayed(this, 1000)
+        }
+    }
 
     private val analysisExecutor = Executors.newSingleThreadExecutor()
     private val stopExecutor = Executors.newSingleThreadExecutor()
@@ -112,7 +138,7 @@ class MainActivity : ComponentActivity() {
         }
 
         panel.addView(label("Campus Panic Camera", 22, Color.WHITE, bold = true))
-        panel.addView(label("Dual-Stream: On-Device Video CNN + Server Audio CNN", 13, Color.rgb(155, 174, 201)))
+        panel.addView(label("Live camera connected to campus CCTV", 13, Color.rgb(155, 174, 201)))
 
         // Alert Banner (High priority downstream and local threat warnings)
         alertBanner = TextView(this).apply {
@@ -131,7 +157,19 @@ class MainActivity : ComponentActivity() {
             scaleType = PreviewView.ScaleType.FIT_CENTER
             setBackgroundColor(Color.BLACK)
         }
-        panel.addView(preview, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(6); bottomMargin = dp(6) })
+        val cameraFrame = FrameLayout(this)
+        cameraFrame.addView(preview, FrameLayout.LayoutParams(-1, -1))
+        hudTop = label("Battery —    Network Offline", 11, Color.WHITE).apply {
+            setPadding(dp(10), dp(7), dp(10), dp(7))
+            setBackgroundColor(Color.argb(190, 8, 15, 25))
+        }
+        hudBottom = label("Smoke —   Fire —   Medical —   Shooting —", 11, Color.WHITE).apply {
+            setPadding(dp(10), dp(7), dp(10), dp(7))
+            setBackgroundColor(Color.argb(190, 8, 15, 25))
+        }
+        cameraFrame.addView(hudTop, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
+        cameraFrame.addView(hudBottom, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
+        panel.addView(cameraFrame, LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(6); bottomMargin = dp(6) })
 
         // Live Badges Container
         val badges = LinearLayout(this).apply {
@@ -209,6 +247,77 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
+
+    private fun batteryPercentage(): Int? = runCatching {
+        val manager = getSystemService(Context.BATTERY_SERVICE) as BatteryManager
+        manager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).takeIf { it in 0..100 }
+    }.getOrNull()
+
+    private fun networkKind(): String = runCatching {
+        val manager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val caps = manager.getNetworkCapabilities(manager.activeNetwork)
+        when {
+            caps == null -> "offline"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+            caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+            else -> "connected"
+        }
+    }.getOrDefault("unknown")
+
+    private fun refreshHud() {
+        if (!::hudTop.isInitialized) return
+        val now = SystemClock.elapsedRealtime()
+        val connected = running && lastGatewayAt > 0 && now - lastGatewayAt < 5000
+        val network = if (connected) when (networkKind()) {
+            "wifi" -> "Wi-Fi"
+            "cellular" -> "Cellular"
+            "ethernet" -> "Ethernet"
+            else -> "Connected"
+        } else if (running) "Reconnecting" else "Offline"
+        hudTop.text = "Battery ${batteryPercentage()?.let { "$it%" } ?: "—"}    Network $network"
+        val fresh = connected && lastHudAt > 0 && now - lastHudAt < 5000
+        val videoGun = running && lastGunAt > 0 && now - lastGunAt < 2000
+        val audioFresh = running && audioAlert && now - lastAudioAt < 5000
+        val values = linkedMapOf<String, Boolean?>()
+        for ((key, name) in linkedMapOf("smoke" to "Smoke", "fire" to "Fire", "medical" to "Medical", "shooting" to "Shooting")) {
+            values[name] = if (key == "shooting" && (videoGun || (audioFresh && audioClass.equals("Gunshot", true)))) true
+                else if (fresh) hudThreats[key] else null
+        }
+        hudBottom.text = values.entries.joinToString("   ") { (name, value) -> "$name ${when (value) { true -> "On"; false -> "Off"; null -> "—" }}" }
+        val active = values.filterValues { it == true }.keys
+        val alarm = active.isNotEmpty() || audioFresh
+        alertBanner.text = when {
+            !running -> "NOT STREAMING"
+            active.isNotEmpty() -> active.joinToString(" / ").uppercase() + " ALERT"
+            audioFresh -> "AUDIO ALERT"
+            !connected -> "CONNECTING TO CAMPUS CCTV"
+            else -> "NO ACTIVE ALERTS REPORTED"
+        }
+        alertBanner.setBackgroundColor(if (alarm) Color.rgb(185, 28, 28) else Color.argb(80, 8, 47, 73))
+        alertBanner.setTextColor(if (alarm) Color.WHITE else Color.rgb(186, 230, 253))
+        if (alarm && !hudAlarm) triggerThreatFeedback()
+        hudAlarm = alarm
+    }
+
+    private fun receiveHud(body: String, epoch: Int) {
+        val hud = runCatching { JSONObject(body).optJSONObject("hud") }.getOrNull() ?: return
+        val threats = hud.optJSONObject("threats") ?: return
+        runOnUiThread {
+            if (running && generation.get() == epoch) {
+                for (key in listOf("smoke", "fire", "medical", "shooting")) {
+                    hudThreats[key] = if (threats.has(key) && !threats.isNull(key)) threats.optBoolean(key) else null
+                }
+                lastHudAt = SystemClock.elapsedRealtime()
+                refreshHud()
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        hudHandler.post(hudTick)
+    }
 
     private fun triggerThreatFeedback() {
         try {
@@ -348,6 +457,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleAudioResult(result: AudioAlertResult) {
+        lastAudioAt = SystemClock.elapsedRealtime()
+        audioAlert = result.alert
+        audioClass = result.classification
         val pct = (result.confidence * 100).toInt()
         if (result.alert) {
             audioBadge.text = "Audio: ⚠️ ${result.classification} ($pct%)"
@@ -425,6 +537,7 @@ class MainActivity : ComponentActivity() {
                     if (running && generation.get() == epoch) {
                         if (numGuns > 0) {
                             val maxConf = (detections.maxOf { it.confidence } * 100).toInt()
+                            lastGunAt = SystemClock.elapsedRealtime()
                             cnnBadge.text = "Video CNN: ⚠️ GUN DETECTED ($maxConf%) [${inferenceMs.toInt()}ms]"
                             cnnBadge.setTextColor(Color.rgb(239, 68, 68))
                             alertBanner.text = "🚨 ON-DEVICE THREAT: GUN DETECTED ($maxConf%)"
@@ -439,7 +552,9 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Send detections upstream to server asynchronously
-                if (numGuns > 0) {
+                if (!detectionUploading && SystemClock.elapsedRealtime() >= nextDetectionAt) {
+                    detectionUploading = true
+                    nextDetectionAt = SystemClock.elapsedRealtime() + 500
                     detectionUploadExecutor.execute {
                         try {
                             val payload = JSONObject().apply {
@@ -455,7 +570,9 @@ class MainActivity : ComponentActivity() {
                                 put("inferenceMs", inferenceMs)
                             }.toString()
                             sendJson(config, "/api/camera/detection", activeSession, payload)
-                        } catch (_: Exception) {}
+                        } catch (_: Exception) {
+                            // Retried with the latest model result; never grow an upload queue.
+                        } finally { detectionUploading = false }
                     }
                 }
             }
@@ -472,7 +589,9 @@ class MainActivity : ComponentActivity() {
             }
 
             if (!running || generation.get() != epoch) return
-            send(config, "/api/camera/frame", activeSession, bytes)
+            val frameResponse = send(config, "/api/camera/frame", activeSession, bytes)
+            lastGatewayAt = SystemClock.elapsedRealtime()
+            receiveHud(frameResponse, epoch)
             if (!running || generation.get() != epoch) return
 
             sent++
@@ -493,6 +612,7 @@ class MainActivity : ComponentActivity() {
     private fun handleNetworkFailure(error: Exception, epoch: Int) {
         if (generation.get() != epoch || !running) return
         session = null
+        lastGatewayAt = 0
         nextFrameAt = SystemClock.elapsedRealtime() + 1000
         if (error is ReceiverError && error.httpCode == 401) {
             runOnUiThread {
@@ -518,6 +638,8 @@ class MainActivity : ComponentActivity() {
             request.instanceFollowRedirects = false
             request.requestMethod = "POST"
             request.setRequestProperty("X-Camera-Token", config.code)
+            batteryPercentage()?.let { request.setRequestProperty("X-Camera-Battery", it.toString()) }
+            request.setRequestProperty("X-Camera-Network", networkKind())
             sessionId?.let { request.setRequestProperty("X-Camera-Session", it) }
             request.setRequestProperty("Content-Type", if (bytes != null) "image/jpeg" else "application/octet-stream")
             request.doOutput = true
@@ -556,6 +678,8 @@ class MainActivity : ComponentActivity() {
             request.readTimeout = 1500
             request.requestMethod = "POST"
             request.setRequestProperty("X-Camera-Token", config.code)
+            batteryPercentage()?.let { request.setRequestProperty("X-Camera-Battery", it.toString()) }
+            request.setRequestProperty("X-Camera-Network", networkKind())
             request.setRequestProperty("X-Camera-Session", sessionId)
             request.setRequestProperty("Content-Type", "application/json")
             request.doOutput = true
@@ -571,6 +695,11 @@ class MainActivity : ComponentActivity() {
     private fun stopTransmission(message: String = "Streaming stopped.") {
         permissionPending = false
         running = false
+        lastGatewayAt = 0
+        lastHudAt = 0
+        lastGunAt = 0
+        lastAudioAt = 0
+        hudThreats.clear()
         generation.incrementAndGet()
         cancelPendingCameraLayout()
 
@@ -593,6 +722,7 @@ class MainActivity : ComponentActivity() {
         alertBanner.text = "● SYSTEM NORMAL"
         alertBanner.setTextColor(Color.rgb(52, 211, 153))
         alertBanner.setBackgroundColor(Color.argb(40, 16, 185, 129))
+        refreshHud()
 
         if (oldSession != null && oldSettings != null) {
             stopExecutor.execute {
@@ -602,11 +732,13 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        hudHandler.removeCallbacks(hudTick)
         stopTransmission()
         super.onStop()
     }
 
     override fun onDestroy() {
+        hudHandler.removeCallbacks(hudTick)
         analysisExecutor.shutdown()
         stopExecutor.shutdown()
         detectionUploadExecutor.shutdown()

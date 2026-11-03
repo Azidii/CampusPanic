@@ -6,6 +6,7 @@ import { videoService } from '../services/videoService.js';
 import { audioService } from '../services/audioService.js';
 import { hashCode } from '../services/nodePairing.js';
 import audioRoutes from './audioRoutes.js';
+import { cameraTelemetry, nodeHud, recordVisionThreat, validGunDetections } from '../services/threatState.js';
 
 const router = express.Router();
 const failure = (res, code, error) => res.status(code).json({ error });
@@ -45,7 +46,6 @@ router.post('/connect', pairLimiter, async (req, res, next) => {
     }).select('+pairingHash');
 
     if (!node) return failure(res, 401, 'Pairing code expired or incorrect. Generate a new code in Security Nodes.');
-    if (!videoService.ready) return failure(res, 503, videoService.message);
 
     const id = node.nodeId;
     if (videoService.pending.has(id)) return failure(res, 409, 'Connection is being updated; retry');
@@ -57,18 +57,23 @@ router.post('/connect', pairLimiter, async (req, res, next) => {
         return failure(res, 409, 'This node already has a connected camera');
       }
 
+      const capacity = Math.min(64, Math.max(1, Number(process.env.VIDEO_MAX_NODES) || 8));
+      const active = [...videoService.sessions].filter(([nodeId, session]) =>
+        nodeId !== id && Date.now() - session.activity < 5000).length;
+      if (active + videoService.pending.size > capacity) return failure(res, 503, 'Camera capacity reached');
       await videoService.revoke(id);
       await audioService.closeSession(id, existing?.id);
 
       const sessionId = randomBytes(24).toString('hex');
-      const response = await videoService.request(`/nodes/${encodeURIComponent(id)}/session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId })
-      });
-
-      if (!response.ok) {
-        return failure(res, response.status, 'Cannot connect another node. The model service may be at capacity.');
+      let workerConnected = false;
+      if (videoService.ready) {
+        try {
+          const response = await videoService.request(`/nodes/${encodeURIComponent(id)}/session`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId })
+          });
+          workerConnected = response.ok;
+        } catch { /* Direct CCTV remains available while inference is unavailable. */ }
       }
 
       // Initialize audio worker session as well
@@ -79,7 +84,8 @@ router.post('/connect', pairLimiter, async (req, res, next) => {
         tokenHash: node.pairingHash,
         activity: Date.now(),
         savedAt: 0,
-        clientDetections: []
+        clientDetections: [], workerConnected, workerRetryAt: 0,
+        telemetry: cameraTelemetry(req.headers), lastFrame: null, frameAt: 0
       });
 
       return res.status(201).json({ sessionId, nodeId: id });
@@ -118,16 +124,15 @@ function authenticateSession(req, res, next) {
 /**
  * Endpoint for phone to report on-device TFLite gun detections
  */
-router.post('/detection', authenticateSession, express.json({ limit: '64kb' }), async (req, res) => {
-  const { nodeId, session } = req.camera;
-  const { detections, inferenceMs } = req.body || {};
-  session.activity = Date.now();
-  session.clientDetections = {
-    detections: Array.isArray(detections) ? detections : [],
-    inferenceMs: Number(inferenceMs) || 0,
-    timestamp: Date.now()
-  };
-  return res.json({ success: true, count: session.clientDetections.detections.length });
+router.post('/detection', authenticateSession, express.json({ limit: '64kb' }), async (req, res, next) => {
+  try {
+    const { nodeId, session } = req.camera;
+    const detections = validGunDetections(req.body?.detections);
+    session.activity = Date.now();
+    session.clientDetections = { detections, inferenceMs: Math.max(0, Number(req.body?.inferenceMs) || 0), timestamp: Date.now() };
+    const alert = await recordVisionThreat(nodeId, detections);
+    res.json({ success: true, count: detections.length, alertId: alert?._id || null });
+  } catch (error) { next(error); }
 });
 
 router.post(
@@ -142,22 +147,45 @@ router.post(
       if (session.uploading) return failure(res, 429, 'Wait for the previous frame');
       session.uploading = true;
       try {
-        const response = await videoService.request(`/nodes/${encodeURIComponent(nodeId)}/frame`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'image/jpeg', 'X-Camera-Session': session.id },
-          body: req.body
-        });
-        const data = await response.json();
-        if (videoService.sessions.get(nodeId) !== session) return failure(res, 409, 'Camera session revoked; pair again');
-
-        if (response.ok) {
-          session.activity = Date.now();
-          if (Date.now() - session.savedAt > 10_000) {
-            session.savedAt = Date.now();
-            await Node.updateOne({ nodeId }, { lastSeen: new Date() });
-          }
+        if (!Buffer.isBuffer(req.body) || req.body.length < 4 || req.body[0] !== 0xFF || req.body[1] !== 0xD8) {
+          return failure(res, 400, 'Invalid JPEG frame');
         }
-        return res.status(response.status).json(data);
+        session.lastFrame = req.body;
+        session.frameAt = Date.now();
+        session.activity = Date.now();
+        session.telemetry = cameraTelemetry(req.headers);
+        let responseStatus = 200;
+        let data = { success: true, status: 'live', inferenceAvailable: false };
+        if (videoService.ready) {
+          try {
+            if (!session.workerConnected && Date.now() - session.workerRetryAt >= 3000) {
+              session.workerRetryAt = Date.now();
+              const opened = await videoService.request(`/nodes/${encodeURIComponent(nodeId)}/session`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId: session.id }),
+                signal: AbortSignal.timeout(1200)
+              });
+              session.workerConnected = opened.ok;
+            }
+            if (session.workerConnected) {
+              const response = await videoService.request(`/nodes/${encodeURIComponent(nodeId)}/frame`, {
+                method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'X-Camera-Session': session.id },
+                body: req.body, signal: AbortSignal.timeout(1200)
+              });
+              if (response.ok) { responseStatus = response.status; data = { ...(await response.json()), inferenceAvailable: true }; }
+              else session.workerConnected = false;
+            }
+          } catch { session.workerConnected = false; }
+        }
+        if (videoService.sessions.get(nodeId) !== session) return failure(res, 409, 'Camera session revoked; pair again');
+        if (Date.now() - session.savedAt > 10000) {
+          session.savedAt = Date.now();
+          await Node.updateOne({ nodeId }, { lastSeen: new Date() });
+        }
+        if (!session.hudAt || Date.now() - session.hudAt >= 1000) {
+          session.hud = await nodeHud(nodeId, session);
+          session.hudAt = Date.now();
+        }
+        return res.status(responseStatus).json({ ...data, hud: session.hud });
       } finally {
         session.uploading = false;
       }

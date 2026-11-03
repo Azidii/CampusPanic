@@ -8,9 +8,10 @@ import { audioService } from '../services/audioService.js';
 const router = express.Router();
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const [documents, alerts] = await Promise.all([
+    const [documents, alerts, activeAlerts] = await Promise.all([
       Node.find().sort({ building: 1, room: 1 }),
-      Alert.find().sort({ priority: 1, timestamp: -1 }).limit(100)
+      Alert.find().sort({ priority: 1, timestamp: -1 }).limit(100),
+      Alert.find({ status: { $ne: 'resolved' } }).sort({ priority: 1, timestamp: -1 })
     ]);
     const nodes = await videoService.describe(documents);
     const counts = Object.fromEntries(['gunshot', 'medical', 'fire', 'panic'].map(type =>
@@ -21,6 +22,7 @@ router.get('/', requireAuth, async (req, res, next) => {
       success: true,
       nodes,
       alerts,
+      activeAlerts,
       counts,
       receiver: {
         ready: videoService.ready,

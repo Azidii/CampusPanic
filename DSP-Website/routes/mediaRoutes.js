@@ -9,13 +9,18 @@ router.get('/:nodeId/frame.jpg', requireAuth, async (req, res) => {
   const id = req.params.nodeId.toUpperCase();
   const session = videoService.sessions.get(id);
   res.set('Cache-Control', 'no-store');
-  if (!session || Date.now() - session.activity >= 3000 || !videoService.ready) return res.status(503).end();
-  try {
-    const response = await videoService.request(`/nodes/${encodeURIComponent(id)}/frame.jpg`);
-    if (!response.ok) return res.status(response.status).end();
-    const frame = Buffer.from(await response.arrayBuffer());
-    if (videoService.sessions.get(id) !== session) return res.status(503).end();
-    return res.type('image/jpeg').send(frame);
-  } catch { return res.status(503).end(); }
+  if (!session || Date.now() - session.activity >= 3000) return res.status(503).end();
+  if (videoService.ready && session.workerConnected) {
+    try {
+      const response = await videoService.request(`/nodes/${encodeURIComponent(id)}/frame.jpg`, { signal: AbortSignal.timeout(1200) });
+      if (response.ok) {
+        const frame = Buffer.from(await response.arrayBuffer());
+        if (videoService.sessions.get(id) !== session) return res.status(503).end();
+        return res.type('image/jpeg').send(frame);
+      }
+    } catch { /* Fall back to the authenticated Android frame. */ }
+  }
+  if (videoService.sessions.get(id) !== session || !session.lastFrame || Date.now() - session.frameAt >= 3000) return res.status(503).end();
+  return res.type('image/jpeg').send(session.lastFrame);
 });
 export default router;

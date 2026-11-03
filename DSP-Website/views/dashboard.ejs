@@ -7,6 +7,10 @@
     <%- include('partials/navbar') %>
 
     <main class="page-body page-body-dashboard">
+      <section class="node-threat-panel" aria-labelledby="nodeThreatTitle">
+        <div class="node-threat-heading"><h2 id="nodeThreatTitle">Live node status</h2><a href="/active-threats-map">Active Threats Map →</a></div>
+        <div id="nodeThreatRows"><p>Checking connected hardware…</p></div>
+      </section>
       <!-- 1. Stats Overview Grid - Tactical Telemetry Pods -->
       <section class="stats-grid">
         <!-- Gunshot Alerts Pod -->
@@ -107,7 +111,7 @@
             <div>
               <div class="threat-headline">CRITICAL THREAT: <%= latestVerified.emergencyType.toUpperCase() %> VERIFIED IN <%= latestVerified.room %></div>
               <div class="threat-subtext">
-                <%= latestVerified.building %> &bull; Node <%= latestVerified.nodeId %> &bull; Firearm Vision: <%= Math.round((latestVerified.firearmConfidence || 0.9) * 100) %>% &bull; TinyML Audio: <%= Math.round((latestVerified.audioConfidence || 0.9) * 100) %>%
+                <%= latestVerified.building %> &bull; Node <%= latestVerified.nodeId %> &bull; Firearm Vision: <%= latestVerified.firearmConfidence == null ? 'Unavailable' : Math.round(latestVerified.firearmConfidence * 100) + '%' %> &bull; TinyML Audio: <%= latestVerified.audioConfidence == null ? 'Unavailable' : Math.round(latestVerified.audioConfidence * 100) + '%' %>
               </div>
             </div>
           </div>
