@@ -121,7 +121,7 @@ test('security-node gateway with real model and isolated test database', { timeo
       pumpA = pump(phoneA); pumpB = pump(phoneB);
       await waitFor(async () => {
         const data = await (await request('/api/live', { cookie: admin })).json();
-        return data.nodes.length === 2 && data.nodes.every(node => node.video.live);
+        return data.nodes.length === 2 && data.nodes.every(node => node.video.live && node.video.inferenceMs != null);
       });
       const data = await (await request('/api/live', { cookie: admin })).json();
       for (const node of data.nodes) {
@@ -158,7 +158,7 @@ test('security-node gateway with real model and isolated test database', { timeo
       await waitFor(async () => (await videoService.states())[a.node.nodeId]?.live);
     });
     await t.test('stale video disappears, expires its session and reconnects using a still-valid code', async () => {
-      pumpA.active = false; await pumpA.promise; await delay(3300);
+      pumpA.active = false; await pumpA.promise; await delay(5100);
       const response = await request(`/media/nodes/${a.node.nodeId}/frame.jpg`, { cookie: admin }); assert.equal(response.status, 503);
       assert.equal((await upload(phoneA)).status, 409);
       const response2 = await request('/api/camera/connect', { method: 'POST', phone: { code: phoneA.code } });

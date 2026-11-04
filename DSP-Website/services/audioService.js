@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Alert } from '../models/Alert.js';
 import { Node } from '../models/Node.js';
+import { recordAudioThreat } from './threatState.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const audioLiveDir = path.join(root, 'Audio-Live');
@@ -28,8 +29,7 @@ export const resolveAudioPython = ({ env = process.env, projectRoot = root, plat
   return candidates.find(candidate => fileExists(candidate)) || 'python';
 };
 
-// Throttle alert creation in DB so a continuous scream or multiple gunshots in 10s don't create 10 alert records
-const recentAlerts = new Map(); // nodeId -> timestamp
+// Active audio incidents are deduplicated by node and event type.
 
 export const audioService = {
   ready: false,
@@ -157,38 +157,8 @@ export const audioService = {
   },
 
   async handleThreatAlert(nodeId, result) {
-    const lastTime = recentAlerts.get(nodeId) || 0;
-    const now = Date.now();
-    if (now - lastTime < 10000) {
-      // Cooldown active, don't spam database
-      return;
-    }
-    recentAlerts.set(nodeId, now);
-
-    try {
-      const node = await Node.findOne({ nodeId });
-      if (!node) return;
-
-      const emergencyType = result.class === 'Gunshot' ? 'gunshot' : 'panic';
-      const count = await Alert.countDocuments();
-      const checksum = `audio-${nodeId}-${now}-${Math.random().toString(36).slice(2, 8)}`;
-
-      await Alert.create({
-        nodeId: node.nodeId,
-        building: node.building,
-        room: node.room,
-        emergencyType,
-        threatStatus: 'verified_threat',
-        priority: emergencyType === 'gunshot' ? 1 : 2,
-        sequenceNumber: count + 1,
-        timestamp: new Date(),
-        checksum,
-        audioConfidence: Math.round(result.confidence * 100)
-      });
-      console.log(`[Audio Threat] Logged verified ${emergencyType} alert for node ${nodeId} (${Math.round(result.confidence * 100)}% conf)`);
-    } catch (err) {
-      console.error('[Audio Threat] Error recording alert to DB:', err.message);
-    }
+    try { await recordAudioThreat(nodeId, result); }
+    catch { console.error('[Audio Threat] Could not record incident; next classification will retry.'); }
   },
 
   getNodeAudio(nodeId) {

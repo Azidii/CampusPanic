@@ -4,7 +4,8 @@
   <div class="main-content">
     <%- include('partials/navbar') %>
     <main class="page-body" id="singleNodePage" data-node-id="<%= selectedNode ? selectedNode.nodeId : '' %>">
-      <div class="nodes-heading"><div><p class="nodes-eyebrow">CAMERA &amp; INCIDENT REVIEW</p><h1>Camera Feed &amp; Threat Verification</h1><p>Live detection results come directly from the laptop model.</p></div><a href="/cameras" class="btn btn-outline">All Cameras →</a></div>
+      <%- include('partials/tabs', { group: 'cameras' }) %>
+      <div class="nodes-heading"><div><h1>Incident review</h1><p>Check one camera and look back at saved incident snapshots.</p></div></div>
       <div id="receiverStatus" class="receiver-status" role="status">Checking model service…</div>
       <div class="nodes-setup-layout"><section>
         <div class="node-viewport setup-preview" id="singlePreview"><img hidden alt="Live node model output"><div class="node-idle"><span class="camera-symbol">◉</span><strong>Camera is currently inactive</strong><span>Select a node or connect its phone.</span></div><span class="node-muted">🔇 Audio not configured</span></div>

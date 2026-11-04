@@ -62,7 +62,7 @@ const alertSchema = new mongoose.Schema(
       max: 1,
       default: null
     },
-    triggerSource: { type: String, enum: ['manual_button', 'smoke_sensor'], default: null },
+    triggerSource: { type: String, enum: ['manual_button', 'smoke_sensor', 'camera_detection', 'audio_detection'], default: null },
     deviceId: { type: String, default: null },
     deviceSequence: { type: Number, default: null },
     deviceEventKey: { type: String, select: false },

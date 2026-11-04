@@ -147,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function updatePreview(viewport, node) {
     if (!viewport) return;
     updateAudioBadge(viewport, node);
+    window.renderCameraHud?.(viewport, node);
     const image = viewport.querySelector('img');
     const idle = viewport.querySelector('.node-idle');
     const live = node?.video?.live && !document.hidden;
@@ -205,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
       'Resolution': video.width ? `${video.width} × ${video.height}` : '—',
       'Inference': video.inferenceMs != null ? `${video.inferenceMs} ms` : '—',
       'Frame age': video.frameAgeMs != null ? `${video.frameAgeMs} ms` : '—',
-      'Model result': video.live ? best !== null ? `Gun detected · ${(best * 100).toFixed(1)}%` : 'No gun detected in current frame' : 'Waiting for fresh model output',
+      'Model result': video.inferenceAvailable === false ? 'Inference unavailable' : video.live ? best !== null ? `Gun detected · ${(best * 100).toFixed(1)}%` : 'No gun detected in current frame' : 'Waiting for fresh model output',
       'Audio': audioText(node)
     };
     element.innerHTML = Object.entries(values).map(([label, value]) => `<div><dt>${escape(label)}</dt><dd>${escape(value)}</dd></div>`).join('');
@@ -235,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
       badge.textContent = status(node).toUpperCase(); badge.dataset.live = Boolean(node.video?.live);
       card.querySelector('.node-card-location').textContent = location(node);
       const result = node.video?.detections || [];
-      card.querySelector('.node-card-model').textContent = node.video?.live ? (result.length ? `Gun detected · ${(Math.max(...result.map(d => d.confidence)) * 100).toFixed(1)}%` : 'Model running · No gun detected') : 'Awaiting fresh video';
+      card.querySelector('.node-card-model').textContent = node.video?.inferenceAvailable === false && node.video?.live ? 'Camera live · inference unavailable' : node.video?.live ? (result.length ? `Gun detected · ${(Math.max(...result.map(d => d.confidence)) * 100).toFixed(1)}%` : 'Model running · No gun detected') : 'Awaiting fresh video';
       card.querySelector('.node-card-time').textContent = node.video?.inferenceMs != null ? `${node.video.inferenceMs} ms inference` : node.nodeId;
       updatePreview(card.querySelector('.node-viewport'), node);
     }
@@ -427,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   function offline() {
-    document.querySelectorAll('.node-viewport').forEach(stopPreview);
+    document.querySelectorAll('.node-viewport').forEach(viewport => { stopPreview(viewport); window.markCameraHudOffline?.(viewport); });
     const banner = document.getElementById('receiverStatus');
     if (banner) { banner.innerHTML = '<span class="receiver-warn-icon">⚠</span> Connection interrupted. Waiting for the laptop website…'; banner.dataset.ready = false; }
   }

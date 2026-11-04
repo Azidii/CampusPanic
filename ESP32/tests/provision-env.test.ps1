@@ -5,7 +5,6 @@ $valid = @'
 WIFI_SSID='Lab # network'
 WIFI_PASSWORD='test-only="password"'
 SERVER_URL=http://127.0.0.1:5000
-LED_ACTIVE_HIGH=true
 '@
 function Check-Config([string]$Text, [bool]$ShouldPass) {
     [IO.File]::WriteAllText($fixture, $Text, [Text.UTF8Encoding]::new($false))
@@ -19,7 +18,7 @@ function Check-Config([string]$Text, [bool]$ShouldPass) {
 try {
     Check-Config $valid $true
     Check-Config ($valid.Replace('SERVER_URL=http://127.0.0.1:5000', 'SERVER_URL=')) $false
-    Check-Config ($valid.Replace('LED_ACTIVE_HIGH=true', 'LED_ACTIVE_HIGH=yes')) $false
+    Check-Config ($valid + "`nLED_ACTIVE_HIGH=true") $false  # LED polarity is now a firmware constant.
     Check-Config ($valid.Replace('http://127.0.0.1:5000', 'https://127.0.0.1:5000')) $false
     Check-Config ($valid + "`nWIFI_SSID=duplicate") $false
     Check-Config ($valid.Replace("WIFI_SSID='Lab # network'", 'WIFI_SSID="bad\nvalue"')) $false

@@ -4,8 +4,8 @@ param(
     [switch]$ValidateOnly
 )
 $ErrorActionPreference = 'Stop'
-$names = @('WIFI_SSID','WIFI_PASSWORD','SERVER_URL','LED_ACTIVE_HIGH')
-$limits = @(32,63,512,5)
+$names = @('WIFI_SSID','WIFI_PASSWORD','SERVER_URL')
+$limits = @(32,63,512)
 $values = @{}
 if (!(Test-Path -LiteralPath $EnvFile)) { throw 'Create ESP32/.env from .env.example first.' }
 foreach ($line in [IO.File]::ReadAllLines((Resolve-Path -LiteralPath $EnvFile))) {
@@ -37,8 +37,7 @@ for ($i = 0; $i -lt $names.Count; $i++) {
 if ($values.SERVER_URL -notmatch '^http://[^\s/]+/?$' -or $values.SERVER_URL.Contains('YOUR_LAPTOP_IP')) {
     throw 'SERVER_URL must be the actual local website base URL, without an API path.'
 }
- $values.SERVER_URL = $values.SERVER_URL.TrimEnd('/')
-if ($values.LED_ACTIVE_HIGH -notin @('true','false')) { throw 'LED_ACTIVE_HIGH must be true or false.' }
+$values.SERVER_URL = $values.SERVER_URL.TrimEnd('/')
 if ($ValidateOnly) { Write-Output '.env validation passed. No values printed; no serial port opened.'; return }
 
 function Wait-Board([string]$Expected) {

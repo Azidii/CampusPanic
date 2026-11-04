@@ -127,6 +127,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) window.refreshCampus(); });
 
+// Sidebar badge: number of unresolved incidents (hidden when there are none).
+window.addEventListener('campus:state', ({ detail }) => {
+  const badge = document.getElementById('sidebarThreatCount');
+  if (!badge) return;
+  const open = Number(detail?.counts?.unresolved) || 0;
+  badge.textContent = open;
+  badge.hidden = open === 0;
+});
+
 // 5. Live Clock Updater & Mobile Drawer
 document.addEventListener('DOMContentLoaded', () => {
   const clockEl = document.getElementById('liveClock');

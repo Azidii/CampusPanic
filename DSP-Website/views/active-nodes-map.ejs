@@ -7,19 +7,16 @@
     <%- include('partials/navbar') %>
 
     <main class="page-body">
+      <%- include('partials/tabs', { group: 'map' }) %>
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
         <div>
-          <h1 style="font-size: 1.4rem; font-weight: 800; color: #ef4444; margin-bottom: 4px;">Active Emergency Threats Map</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Filtered geospatial radar highlighting activated campus emergency nodes with pulsing threat animations</p>
+          <h1 style="font-size: 1.4rem; font-weight: 800; color: #ef4444; margin-bottom: 4px;">Active Threats Map <span class="threat-pill-badge">LIVE</span></h1>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Live gun/shooter detections, smoke/fire incidents and manual alerts reported by paired ESP32 nodes.</p>
         </div>
 
-        <div>
-          <a href="/map" class="btn btn-outline">
-            &larr; Return to All Nodes Map
-          </a>
-        </div>
       </div>
 
+      <p id="threatLiveBanner" class="threat-live-banner" role="status" aria-live="polite">Monitoring active campus threats…</p>
       <div class="threat-map-layout">
         <!-- Main Map -->
         <div class="threat-map-wrapper">

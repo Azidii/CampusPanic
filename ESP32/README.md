@@ -4,6 +4,40 @@ Open `ESP32.ino` in Arduino IDE. Select **ESP32 Dev Module** (the schematic is a
 ESP32 DevKit V1), choose the actual COM port, upload, and open Serial Monitor at
 **115200 baud**. Uses the ESP32 board package only; no extra Arduino libraries.
 
+## Current setup: powered through the ESP32 USB connector
+
+The same USB cable used to upload the sketch can power the ESP32 during testing.
+No firmware power-mode change is needed. Buttons and LEDs work without an open
+Serial Monitor. USB provisioning and reading the pairing PIN still use that cable.
+Missing screw terminal blocks do not change the GPIO assignments below.
+
+With the battery/charger/boost assembly absent, leave its connections disconnected.
+Do not connect a separate powered 5 V/VIN or 3.3 V supply at the same time as USB
+unless your exact board documents a safe power-sharing arrangement.
+
+USB power to the ESP32 does not prove that the PCB's peripheral power rail has
+5 V. Before connecting modules, check continuity with power off, then measure
+their VCC-to-GND voltage with USB connected. All connected modules need a common
+GND. Do not power the MQ-2 heater or VR3 from a GPIO or the 3.3 V pin; they require
+their specified supply. Verify the board's USB-to-5 V/VIN path and available
+current before using it to feed peripherals; these PCB drawings do not establish
+the exact DevKit's power circuitry or the USB cable/port's current capability.
+
+Start with buttons and LEDs, then add powered modules one at a time. If adding a
+module causes resets or unstable readings, check the supply voltage and current
+budget. Keep smoke detection disarmed until the MQ-2 is powered, warmed up and
+calibrated. Never arm it with D0 disconnected or unpowered: GPIO35 has no internal
+pull resistor. Keep the shown voltage dividers on MQ-2 outputs and VR3 TXD.
+
+LED2 is GPIO33 in the supplied PCB routing; the previous sketch used GPIO23.
+If you wired a breadboard to the old sketch, move LED2's signal wire to GPIO33
+with power disconnected.
+
+References: the supplied adhesive/component-placement and colored PCB-routing
+PDFs, plus Espressif's [DevKit power-supply guidance](https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32/esp32-devkitc/user_guide.html#power-supply-options).
+The PDFs show PCB placement/routing, rather than a full electrical schematic;
+confirm your actual board and assembly before applying power.
+
 ## Wiring from your schematic
 
 | Function | ESP32 GPIO | Behavior |
@@ -14,16 +48,26 @@ ESP32 DevKit V1), choose the actual COM port, upload, and open Serial Monitor at
 | MQ-2 A0 / D0 | 34 / 35 | Analog telemetry / digital smoke threshold |
 | VR3 TXD -> ESP32 RX2 | 16 | Through the schematic's voltage divider |
 | ESP32 TX2 -> VR3 RXD | 17 | Module UART, default 9600 baud |
-| Future OLED SDA / SCL | 21 / 22 | Example code is entirely commented out |
+| OLED SDA / SCL | 21 / 22 | 128x64 I2C display (SH1106 default, SSD1306 via `4`), address 0x3C/0x3D |
+| Battery sense | 36 | Battery+ through a divider (default 2:1, see `BATTERY_DIVIDER`); shows N/A when unwired |
 
 Buttons connect to ground and use internal pull-ups. LEDs use the schematic's
-330-ohm series resistors. LED colors were not specified; assign colors physically.
-No battery-management code is required for the shown charger/boost arrangement.
-SD storage is unused in this bring-up.
+330-ohm series resistors and are **active-high** (GPIO HIGH = ON); every LED starts OFF.
+LED colors were not specified; assign colors physically. Charging/boost needs no
+firmware, but the battery percentage on the OLED needs the divider on GPIO36
+(otherwise it shows `N/A`). SD storage is unused in this bring-up.
+
+## OLED
+
+Top to bottom: `BATTERY: n%`, `NETWORK: ONLINE/OFFLINE`, `FIRE: ON/OFF`,
+`MEDICAL: ON/OFF`, `ACTIVE SHOOTER: ON/OFF`. While the board is unpaired, its
+pairing PIN is shown at the bottom. **Online** means the last five-second
+heartbeat reached the website; **Offline** means Wi-Fi is down, the site is
+unreachable, or the board is not configured.
 
 ## Test on the board
 
-Serial Monitor substitutes for the missing OLED: readable status at startup,
+Serial Monitor mirrors the OLED: readable status at startup,
 alerts when a button or armed smoke input triggers, and status on smoke changes.
 There is no repeating JSON output. Send `s` to refresh the display. Buttons and
 LEDs work independently of Serial Monitor; no Python or website is required.
@@ -40,8 +84,8 @@ LEDs work independently of Serial Monitor; no Python or website is required.
    If the serial alert prints but the LED stays dark, the button was detected.
    Check the physical LED path and measure GPIO-to-GND voltage: the schematic
    expects about 3.3 V while commanded ON. For a common-anode LED module wired
-   to a 3.3 V rail, set `LED_ACTIVE_HIGH=false` in .env and provision again only after
-   confirming that wiring; the schematic's individual LEDs use `true`.
+   to a 3.3 V rail, set `LED_ACTIVE_HIGH` to `false` at the top of `ESP32.ino` and
+   re-upload, only after confirming that wiring; the schematic's individual LEDs use `true`.
 3. Smoke detection starts **disarmed** while A0/D0 remain visible. Condition,
    warm up and calibrate your MQ-2 according to its actual module documentation;
    then send `a` to arm. Send `a` again to disarm. D0 must stay active for 500 ms
@@ -82,12 +126,10 @@ dependencies. It does not use VR3 input or claim to test microphone hardware.
 ## Pair an ESP32 to a website node
 
 The website owns the node ID, building and room. Do not put those fields or the
-website's shared API key in the ESP32 environment file. `LED_ACTIVE_HIGH=true`
-means GPIO HIGH turns the schematic's LED on; false is for confirmed active-low
-3.3 V LED wiring. It is a hardware setting, not a website mute control.
+website's shared API key in the ESP32 environment file.
 
-1. Fill `ESP32/.env` using `.env.example`: Wi-Fi name/password, `SERVER_URL`
-   (for example `http://192.168.254.105:5000`, with no API path), and LED polarity.
+1. Fill `ESP32/.env` using `.env.example`: Wi-Fi name/password and `SERVER_URL`
+   (for example `http://192.168.254.105:5000`, with no API path).
    `.env` and its variants stay ignored by Git. No credential header is generated.
 2. Upload `ESP32.ino`. Close Serial Monitor and run from the ESP32 folder:
 

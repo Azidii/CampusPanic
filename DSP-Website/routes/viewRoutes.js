@@ -155,10 +155,10 @@ router.get('/map', requireViewAuth, async (req, res, next) => {
 });
 
 // 6. Active Nodes Map (Emergency Hotspots Only)
-router.get('/active-nodes-map', requireViewAuth, async (req, res, next) => {
+router.get(['/active-threats-map', '/active-nodes-map'], requireViewAuth, async (req, res, next) => {
   try {
     const [activeNodes, activeAlerts] = await Promise.all([
-      Node.find({ status: 'active' }).sort({ building: 1, room: 1 }),
+      Node.find().sort({ building: 1, room: 1 }),
       Alert.find({ status: { $ne: 'resolved' } }).sort({ priority: 1, timestamp: -1 })
     ]);
 
@@ -166,7 +166,7 @@ router.get('/active-nodes-map', requireViewAuth, async (req, res, next) => {
       title: 'Active Threats Campus Map — CampusPanic',
       page: 'active-nodes-map',
       user: req.user,
-      activeNodes,
+      activeNodes: await videoService.describe(activeNodes),
       activeAlerts
     });
   } catch (err) {

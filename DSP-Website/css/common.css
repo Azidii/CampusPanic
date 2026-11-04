@@ -1182,3 +1182,94 @@ a {
   align-items: center;
   justify-content: space-between;
 }
+
+/* =========================================================
+   Simplified navigation (flat sidebar, page title, tabs, steps)
+   ========================================================= */
+.page-title-bar {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.sidebar-nav { gap: 4px; padding-top: 16px; }
+.nav-item { padding: 10px 12px; font-size: 0.9rem; }
+.nav-item .threat-pill-badge { margin-left: auto; }
+
+a.user-profile-pod { text-decoration: none; color: inherit; border-radius: var(--radius-xs); }
+a.user-profile-pod:hover .user-name,
+a.user-profile-pod.active .user-name { color: #ffffff; }
+.sidebar-signout-btn.active { color: #ffffff; background: var(--accent-soft); }
+
+/* Tabs that join related pages (Cameras / Map) */
+.page-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  margin-bottom: 16px;
+  background: var(--bg-recessed);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.page-tab {
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: var(--transition-fast);
+}
+.page-tab:hover { color: var(--text-primary); background: var(--bg-surface-hover); }
+.page-tab.active { color: #ffffff; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--border-active); }
+
+/* Numbered setup steps on the Devices page */
+.setup-steps {
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 0;
+}
+.setup-steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 12px 14px 12px 52px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.setup-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  background: var(--accent-soft);
+  border: 1px solid var(--border-active);
+}
+.setup-steps strong { font-size: 0.88rem; color: var(--text-primary); }
+.setup-steps span { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4; }
+@media (max-width: 900px) { .setup-steps { grid-template-columns: 1fr; } }
+
+/* Dashboard: alert feed uses the full width now that the placeholder panels are gone */
+.dashboard-split-workspace.dashboard-single-column { grid-template-columns: minmax(0, 1fr); }
+
+@media (max-width: 640px) {
+  .hardware-siren-btn .siren-btn-text { display: none; }
+  .page-title-bar { font-size: 0.88rem; }
+}
