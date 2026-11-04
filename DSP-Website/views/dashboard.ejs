@@ -8,7 +8,7 @@
 
     <main class="page-body page-body-dashboard">
       <section class="node-threat-panel" aria-labelledby="nodeThreatTitle">
-        <div class="node-threat-heading"><h2 id="nodeThreatTitle">Live node status</h2><a href="/active-threats-map">Active Threats Map →</a></div>
+        <div class="node-threat-heading"><h2 id="nodeThreatTitle">Device status</h2><a href="/security-nodes">Manage devices →</a></div>
         <div id="nodeThreatRows"><p>Checking connected hardware…</p></div>
       </section>
       <!-- 1. Stats Overview Grid - Tactical Telemetry Pods -->
@@ -117,7 +117,7 @@
           </div>
           <div>
             <a href="/cam-view?nodeId=<%= latestVerified.nodeId %>&alertId=<%= latestVerified._id %>" class="btn btn-danger">
-              Open Verification Cam &rarr;
+              Review incident &rarr;
             </a>
           </div>
         </div>
@@ -173,7 +173,7 @@
       </section>
 
       <!-- 4. 2-Column Tactical Split Command View -->
-      <div class="dashboard-split-workspace">
+      <div class="dashboard-split-workspace dashboard-single-column">
         <!-- Primary Alert Feed Panel (Left 65%) -->
         <div class="workspace-main-panel">
           <section class="alert-feed-list" id="alertFeedList">
@@ -233,7 +233,7 @@
 
                   <div class="alert-card-actions">
                     <a href="/cam-view?nodeId=<%= a.nodeId %>&alertId=<%= a._id %>" class="btn btn-sm btn-outline">
-                      Inspect Camera Feed &rarr;
+                      View camera &rarr;
                     </a>
 
                     <div class="alert-action-btns">
@@ -280,95 +280,6 @@
           </section>
         </div>
 
-        <!-- Live System Telemetry & Node Health Side Panel (Right 35%) -->
-        <aside class="workspace-side-panel">
-          <!-- 1. System Readiness Status -->
-          <div class="tactical-panel readiness-panel">
-            <div class="panel-header">
-              <div class="panel-title-wrap">
-                <span class="panel-status-dot online"></span>
-                <span class="panel-title">SYSTEM READINESS</span>
-              </div>
-              <span class="panel-badge-nominal">NOMINAL</span>
-            </div>
-
-            <div class="readiness-list">
-              <div class="readiness-item">
-                <div class="readiness-meta">
-                  <div class="readiness-name">TinyML Acoustic Engine</div>
-                  <div class="readiness-detail">Edge Mic Array &bull; Dual-Model Inference</div>
-                </div>
-                <span class="readiness-tag tag-online">ONLINE</span>
-              </div>
-
-              <div class="readiness-item">
-                <div class="readiness-meta">
-                  <div class="readiness-name">CV Firearm Pipeline</div>
-                  <div class="readiness-detail">YOLO Detection &bull; Low-Latency H.264</div>
-                </div>
-                <span class="readiness-tag tag-standby">STANDBY</span>
-              </div>
-
-              <div class="readiness-item">
-                <div class="readiness-meta">
-                  <div class="readiness-name">Audio Siren Relay</div>
-                  <div class="readiness-detail">WebAudio Hardware Synthesizer</div>
-                </div>
-                <span class="readiness-tag tag-armed">ARMED</span>
-              </div>
-
-              <div class="readiness-item">
-                <div class="readiness-meta">
-                  <div class="readiness-name">Telemetry Gateway Sync</div>
-                  <div class="readiness-detail">HTTP Live Polling &bull; 2000ms Cycle</div>
-                </div>
-                <span class="readiness-tag tag-synced">SYNCED</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. Recent System Heartbeats / Audit Log -->
-          <div class="tactical-panel audit-panel">
-            <div class="panel-header">
-              <div class="panel-title-wrap">
-                <span class="panel-title-mono-icon">&gt;_</span>
-                <span class="panel-title">LIVE TELEMETRY AUDIT</span>
-              </div>
-              <span class="panel-stream-indicator">
-                <span class="pulse-dot-green-sm"></span>
-                <span>STREAMING</span>
-              </span>
-            </div>
-
-            <div class="audit-log-stream" id="auditLogStream">
-              <div class="audit-log-entry">
-                <span class="audit-time font-mono">16:18:52</span>
-                <span class="audit-tag tag-gw">[GATEWAY]</span>
-                <span class="audit-msg">Node heartbeat cycle OK &bull; 0 active threats</span>
-              </div>
-              <div class="audit-log-entry">
-                <span class="audit-time font-mono">16:18:48</span>
-                <span class="audit-tag tag-audio">[ACOUSTIC]</span>
-                <span class="audit-msg">TinyML spectral threshold nominal (SNR 42dB)</span>
-              </div>
-              <div class="audit-log-entry">
-                <span class="audit-time font-mono">16:18:42</span>
-                <span class="audit-tag tag-cv">[CV_PIPE]</span>
-                <span class="audit-msg">Verification worker pool ready (45ms ping)</span>
-              </div>
-              <div class="audit-log-entry">
-                <span class="audit-time font-mono">16:18:35</span>
-                <span class="audit-tag tag-siren">[RELAY]</span>
-                <span class="audit-msg">Synthesizer armed &bull; WebAudio context ready</span>
-              </div>
-              <div class="audit-log-entry">
-                <span class="audit-time font-mono">16:18:20</span>
-                <span class="audit-tag tag-auth">[SOC_AUTH]</span>
-                <span class="audit-msg">Operator <%= (user && user.name) ? user.name : 'ADMIN' %> authenticated</span>
-              </div>
-            </div>
-          </div>
-        </aside>
       </div>
     </main>
 

@@ -1,0 +1,10 @@
+<%# Small tab strip that joins related pages so the sidebar can stay short. Pass `group`: 'cameras' or 'map'. %>
+<nav class="page-tabs" aria-label="Related pages">
+  <% if (group === 'cameras') { %>
+    <a href="/cameras" class="page-tab <%= page === 'all-cams' ? 'active' : '' %>">Live cameras</a>
+    <a href="/cam-view" class="page-tab <%= page === 'cam-view' ? 'active' : '' %>">Incident review</a>
+  <% } else if (group === 'map') { %>
+    <a href="/map" class="page-tab <%= page === 'map-view' ? 'active' : '' %>">All devices</a>
+    <a href="/active-threats-map" class="page-tab <%= page === 'active-nodes-map' ? 'active' : '' %>">Active threats</a>
+  <% } %>
+</nav>

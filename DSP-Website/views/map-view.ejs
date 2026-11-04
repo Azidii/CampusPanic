@@ -7,17 +7,13 @@
     <%- include('partials/navbar') %>
 
     <main class="page-body">
+      <%- include('partials/tabs', { group: 'map' }) %>
       <div class="map-header-bar">
         <div>
-          <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Campus Nodes &amp; Sensor Map</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Interactive geospatial telemetry tracking all ESP32 acoustic trigger nodes and cameras</p>
+          <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Campus map</h1>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Where every device is on campus. Colors show whether it is online, offline or in an emergency.</p>
         </div>
 
-        <div>
-          <a href="/active-nodes-map" class="btn btn-danger">
-            View Active Threats Map &rarr;
-          </a>
-        </div>
       </div>
 
       <div class="map-container-wrapper">

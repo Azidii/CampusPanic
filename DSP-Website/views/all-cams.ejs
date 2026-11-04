@@ -4,11 +4,12 @@
   <div class="main-content">
     <%- include('partials/navbar') %>
     <main class="page-body" id="cctvPage" data-admin="<%= user.role === 'admin' %>">
-      <div class="nodes-heading"><div><p class="nodes-eyebrow">CAMPUS SURVEILLANCE</p><h1>CCTV Monitoring Room</h1><p>All security nodes in one view. Select a feed to enlarge it and manage its connection.</p></div><a class="btn btn-primary" href="/security-nodes">Create Security Nodes →</a></div>
+      <%- include('partials/tabs', { group: 'cameras' }) %>
+      <div class="nodes-heading"><div><h1>Live cameras</h1><p>Every camera in one place. Click a camera to enlarge it.</p></div><a class="btn btn-primary" href="/security-nodes">+ Add a device →</a></div>
       <div class="cctv-toolbar"><div class="node-filter-group" role="group" aria-label="Filter security nodes"><button class="filter-chip active" data-node-filter="all">All nodes</button><button class="filter-chip" data-node-filter="live">Live</button><button class="filter-chip" data-node-filter="offline">Offline</button></div><span id="cctvSummary" role="status">Checking connections…</span></div>
       <div id="receiverStatus" class="receiver-status" role="status">Checking model service…</div>
       <div id="cctvGrid" class="security-cctv-grid"></div>
-      <div id="cctvEmpty" class="nodes-empty" hidden><span class="camera-symbol">◉</span><h2>No security nodes here yet</h2><p>Create a node, enter its pairing code on your phone, and its video will appear here.</p><a href="/security-nodes" class="btn btn-outline">Open Security Nodes</a></div>
+      <div id="cctvEmpty" class="nodes-empty" hidden><span class="camera-symbol">◉</span><h2>No cameras yet</h2><p>Add a device, enter its pairing code on your phone, and its video will appear here.</p><a href="/security-nodes" class="btn btn-outline">Go to Devices</a></div>
       <%- include('partials/node-dialog') %>
     </main>
     <%- include('partials/footer') %>

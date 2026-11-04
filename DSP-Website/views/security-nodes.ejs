@@ -7,15 +7,21 @@
       <!-- 1. Page Header with Right-Aligned CCTV CTA -->
       <div class="nodes-heading">
         <div>
-          <p class="nodes-eyebrow">DEVICE CONNECTIONS // PERIMETER TELEMETRY</p>
-          <h1>Security Nodes</h1>
-          <p>Create a location, then pair its phone camera and ESP32.</p>
+          <h1>Devices</h1>
+          <p>Add a location, then connect its phone camera and ESP32 button box.</p>
         </div>
         <div class="node-action-row">
           <a href="/public/downloads/camera.apk" class="btn btn-outline" download="CampusPanicCamera-debug.apk">Download Android app</a>
-          <a href="/cameras" class="btn btn-outline" id="openCctvBtn">Open CCTV Room &rarr;</a>
+          <a href="/cameras" class="btn btn-outline" id="openCctvBtn">View cameras &rarr;</a>
         </div>
       </div>
+
+      <!-- Setup steps -->
+      <ol class="setup-steps" aria-label="How to connect a device">
+        <li><strong>Add a location</strong><span>Name, building and room. Use the form on the right.</span></li>
+        <li><strong>Connect the phone camera</strong><span>Enter the 8-digit code in the Campus Panic Camera app.</span></li>
+        <li><strong>Connect the ESP32</strong><span>Open the location below, then <em>Audio · ESP32 → Scan</em> and enter the PIN shown on the board.</span></li>
+      </ol>
 
       <!-- 2. Full-Width Configuration / Model Warning Banner -->
       <div id="receiverStatus" class="receiver-status" role="status">Checking model service…</div>
@@ -37,7 +43,7 @@
           </div>
 
           <div class="nodes-section-heading">
-            <h2>Your Security Nodes</h2>
+            <h2>Your locations</h2>
             <span id="nodeCount">0 nodes</span>
           </div>
           <div id="setupNodeList" class="setup-node-list">
@@ -47,14 +53,14 @@
 
         <!-- Right Column: Create Security Node Form Card -->
         <section class="card node-create-panel">
-          <h2>Create a security node</h2>
-          <p class="nodes-hint">Enter the location once. Then connect the phone camera and pair an ESP32 from the node’s Audio section.</p>
+          <h2>Add a location</h2>
+          <p class="nodes-hint">Enter the location once. Camera and ESP32 are connected afterwards.</p>
           
           <% if (user.role === 'admin') { %>
             <form id="createNodeForm" class="node-form" autocomplete="off">
               <%- include('partials/node-fields', { prefix: 'create' }) %>
               <button class="btn btn-primary node-submit-btn" type="submit">
-                Create Node &amp; Get Pairing Code
+                Add location &amp; get pairing code
               </button>
               <p id="createNodeError" class="node-error" role="alert"></p>
             </form>
@@ -65,10 +71,10 @@
           <!-- Intentional Hardware Slot Status Module -->
           <div class="node-audio-space">
             <strong>
-              <span class="slot-badge">SLOT 02</span>
-              <span>ESP32 AUDIO CONNECTION</span>
+              <span class="slot-badge">ESP32</span>
+              <span>Connect after adding a location</span>
             </strong>
-            <span class="slot-status">Pair after creating a node</span>
+            <span class="slot-status">Click a location in the list</span>
           </div>
         </section>
       </div>

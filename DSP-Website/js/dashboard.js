@@ -174,12 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
     lastHeartbeatSeconds = 0;
     updateHeartbeatTimerUI();
 
-    const latencyEl = document.getElementById('footerLatencyVal');
-    if (latencyEl) {
-      const simulatedLatency = Math.floor(10 + Math.random() * 6);
-      latencyEl.textContent = `${simulatedLatency}ms`;
-    }
-
     const ids = new Set(detail.alerts.map(alert => alert._id));
     document.querySelectorAll('.alert-card').forEach(card => {
       if (!ids.has(card.id.replace('alert-card-', ''))) card.remove();
@@ -258,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div>
-          <a class="btn btn-danger" href="/cam-view?nodeId=${encodeURIComponent(latest.nodeId)}&alertId=${encodeURIComponent(latest._id)}">Open Verification Cam &rarr;</a>
+          <a class="btn btn-danger" href="/cam-view?nodeId=${encodeURIComponent(latest.nodeId)}&alertId=${encodeURIComponent(latest._id)}">Review incident &rarr;</a>
         </div>
       `;
     }
@@ -325,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="alert-card-actions">
         <a href="/cam-view?nodeId=${a.nodeId}&alertId=${a._id}" class="btn btn-sm btn-outline">
-          Inspect Camera Feed &rarr;
+          View camera &rarr;
         </a>
         <div class="alert-action-btns">
           <button class="btn btn-sm btn-warning alert-action-trigger" data-alert-id="${a._id}" data-action="acknowledge">
