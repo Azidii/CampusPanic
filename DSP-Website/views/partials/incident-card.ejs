@@ -1,0 +1,8 @@
+<article class="alert-card priority-<%= a.priority %>" id="alert-card-<%= a._id %>">
+  <div class="alert-card-header"><div class="alert-badges"><span class="badge badge-<%= a.emergencyType %>"><%= a.emergencyType %></span><span class="badge"><%= a.threatStatus.replaceAll('_',' ') %></span><span class="badge"><%= a.status %><%= a.acknowledgedBy ? ' · ' + a.acknowledgedBy : '' %></span></div><time class="alert-time"><%= new Date(a.timestamp).toLocaleString() %></time></div>
+  <div class="alert-card-body"><div class="alert-location"><div><strong class="location-room"><%= a.room %></strong><div class="location-building"><%= a.building %><%= ['RSY','RG Birrey'].includes(a.building) ? '' : ' · Recorded building needs review' %></div></div><span class="location-node"><%= a.nodeId %></span></div></div>
+  <div class="alert-card-actions"><a class="btn btn-sm btn-outline" href="/cam-view?nodeId=<%= encodeURIComponent(a.nodeId) %>&amp;alertId=<%= a._id %>">Review incident →</a><div class="alert-action-btns">
+    <% if (a.status === 'new') { %><button class="btn btn-sm btn-warning alert-action-trigger" data-alert-id="<%= a._id %>" data-action="acknowledge">Acknowledge</button><% } %>
+    <% if (a.status !== 'resolved') { %><button class="btn btn-sm btn-success alert-action-trigger" data-alert-id="<%= a._id %>" data-action="resolve">Resolve</button><% } else { %><span>Incident closed</span><% } %>
+  </div></div>
+</article>

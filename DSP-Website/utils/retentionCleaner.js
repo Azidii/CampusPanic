@@ -1,79 +1,39 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { Alert } from '../models/Alert.js';
 import { config } from '../config/config.js';
+import { withIncidentWrite } from '../services/incidentGuard.js';
+import { removeSnapshot, SNAPSHOT_DIR } from './snapshots.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const UPLOADS_DIR = path.resolve(__dirname, '../uploads/alerts');
-
-export const runRetentionCleanup = async () => {
-  if (config.imageRetentionHours <= 0) {
-    return;
-  }
-
-  const cutoff = new Date(Date.now() - config.imageRetentionHours * 60 * 60 * 1000);
-  console.log(`[Retention Cleaner] Running cleanup for images older than ${config.imageRetentionHours} hours (before ${cutoff.toISOString()})...`);
-
+export async function cleanupAlertSnapshot(alert, remove = removeSnapshot) {
+  await remove(alert.imageUrl);
+  await Alert.updateOne({ _id: alert._id, imageUrl: alert.imageUrl }, { $set: { imageUrl: null } });
+}
+export async function runRetentionCleanup() {
+  if (config.imageRetentionHours <= 0) return;
+  const cutoff = new Date(Date.now() - config.imageRetentionHours * 3600000);
   try {
-    const oldAlerts = await Alert.find({
-      imageUrl: { $ne: null },
-      timestamp: { $lt: cutoff }
-    });
-
-    let removedCount = 0;
-
-    for (const alert of oldAlerts) {
-      if (alert.imageUrl) {
-        const filename = path.basename(alert.imageUrl);
-        const filepath = path.join(UPLOADS_DIR, filename);
-
-        if (fs.existsSync(filepath)) {
-          try {
-            fs.unlinkSync(filepath);
-            removedCount++;
-          } catch (e) {
-            console.warn(`[Retention Cleaner] Failed to delete file ${filepath}:`, e.message);
-          }
-        }
-
-        alert.imageUrl = null;
-        await alert.save();
+    await withIncidentWrite(async () => {
+      for await (const alert of Alert.find({ imageUrl: { $ne: null }, timestamp: { $lt: cutoff } }).lean().cursor()) {
+        try { await cleanupAlertSnapshot(alert); }
+        catch { console.warn('[Retention] Snapshot cleanup failed; database reference retained:', String(alert._id)); }
       }
-    }
-
-    if (fs.existsSync(UPLOADS_DIR)) {
-      const files = fs.readdirSync(UPLOADS_DIR);
-      for (const file of files) {
-        if (file === '.gitkeep') continue;
-        const filepath = path.join(UPLOADS_DIR, file);
+      const referenced = new Set(await Alert.distinct('imageUrl', { imageUrl: { $ne: null } }));
+      let files;
+      try { files = await fs.readdir(SNAPSHOT_DIR); }
+      catch (error) { if (error.code === 'ENOENT') return; throw error; }
+      for (const filename of files) {
+        if (filename === '.gitkeep' || referenced.has(`/uploads/alerts/${filename}`)) continue;
         try {
-          const stats = fs.statSync(filepath);
-          if (stats.mtime < cutoff) {
-            fs.unlinkSync(filepath);
-            removedCount++;
-          }
-        } catch (e) {
-          // ignore
-        }
+          const stat = await fs.stat(path.join(SNAPSHOT_DIR, filename));
+          if (stat.isFile() && stat.mtime < cutoff) await removeSnapshot(`/uploads/alerts/${filename}`);
+        } catch { console.warn('[Retention] Unreferenced snapshot could not be removed.'); }
       }
-    }
-
-    if (removedCount > 0) {
-      console.log(`[Retention Cleaner] Successfully deleted ${removedCount} expired alert image(s).`);
-    }
-  } catch (err) {
-    console.error('[Retention Cleaner] Error during retention cleanup:', err.message);
-  }
-};
-
-export const startRetentionCleaner = () => {
-  if (config.imageRetentionHours <= 0) {
-    console.log('[Retention Cleaner] Automatic retention cleanup disabled (retention period = 0).');
-    return;
-  }
+    });
+  } catch { console.warn('[Retention] Cleanup unavailable; will retry on the next sweep.'); }
+}
+export function startRetentionCleaner() {
+  if (config.imageRetentionHours <= 0) return;
   runRetentionCleanup();
-  setInterval(runRetentionCleanup, 60 * 60 * 1000);
-  console.log(`[Retention Cleaner] Scheduled to run hourly. Retention window: ${config.imageRetentionHours} hours.`);
-};
+  setInterval(runRetentionCleanup, 3600000).unref();
+}

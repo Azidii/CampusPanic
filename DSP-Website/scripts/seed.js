@@ -8,7 +8,9 @@ import { computeAlertChecksum } from '../utils/checksum.js';
 
 const seedDatabase = async () => {
   try {
-    console.log('[Seed] Connecting to database...');
+    const name = new URL(config.mongoUri).pathname.slice(1);
+    if (process.env.NODE_ENV !== 'test' || !/^campuspanic_[a-z0-9_]+_seed$/.test(name)) throw new Error('Seed only an explicitly named campuspanic_*_seed database with NODE_ENV=test. Never seed mainDB.');
+    console.log('[Seed] Connecting to isolated seed database...');
     await connectDB();
 
     console.log('[Seed] Clearing existing test data...');
@@ -37,7 +39,7 @@ const seedDatabase = async () => {
       passwordHash: guardPasswordHash,
       role: 'user',
       isActive: true,
-      assignedBuilding: 'Science Complex'
+      assignedBuilding: 'RSY'
     });
 
     console.log(`[Seed] Created Admin: ${admin.email}`);
@@ -49,7 +51,7 @@ const seedDatabase = async () => {
     const nodesData = [
       {
         nodeId: 'SC-101',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Lab 101',
         lat: campusCenter.lat + 0.0008,
         lng: campusCenter.lng - 0.0007,
@@ -59,7 +61,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'SC-204',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Lecture Hall 204',
         lat: campusCenter.lat + 0.0011,
         lng: campusCenter.lng - 0.0003,
@@ -69,7 +71,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'SC-310',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Chemistry Prep 310',
         lat: campusCenter.lat + 0.0013,
         lng: campusCenter.lng - 0.0009,
@@ -79,7 +81,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'ENG-102',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Robotics Workshop 102',
         lat: campusCenter.lat - 0.0006,
         lng: campusCenter.lng + 0.0008,
@@ -89,7 +91,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'ENG-205',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Computer Lab 205',
         lat: campusCenter.lat - 0.0009,
         lng: campusCenter.lng + 0.0011,
@@ -99,7 +101,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'ENG-308',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Faculty Lounge 308',
         lat: campusCenter.lat - 0.0012,
         lng: campusCenter.lng + 0.0005,
@@ -109,16 +111,16 @@ const seedDatabase = async () => {
       }
     ];
 
-    const nodes = await Node.insertMany(nodesData);
+    const nodes = await Node.insertMany(nodesData.map(node => ({...node, name: `Demo ${node.nodeId}`, lat:null, lng:null})));
     console.log(`[Seed] Seeded ${nodes.length} room nodes.`);
 
     console.log('[Seed] Creating camera feeds...');
     const camerasData = [
       {
         cameraId: 'CAM-SC101',
-        label: 'Science Complex - Lab 101',
+        label: 'RSY - Lab 101',
         nodeId: 'SC-101',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Lab 101',
         online: true,
         lastFrameAt: new Date(),
@@ -126,9 +128,9 @@ const seedDatabase = async () => {
       },
       {
         cameraId: 'CAM-SC204',
-        label: 'Science Complex - Lecture 204',
+        label: 'RSY - Lecture 204',
         nodeId: 'SC-204',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Lecture Hall 204',
         online: true,
         lastFrameAt: new Date(),
@@ -136,9 +138,9 @@ const seedDatabase = async () => {
       },
       {
         cameraId: 'CAM-SC310',
-        label: 'Science Complex - Chem Prep 310',
+        label: 'RSY - Chem Prep 310',
         nodeId: 'SC-310',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Chemistry Prep 310',
         online: true,
         lastFrameAt: new Date(Date.now() - 60000),
@@ -146,9 +148,9 @@ const seedDatabase = async () => {
       },
       {
         cameraId: 'CAM-ENG102',
-        label: 'Engineering Hall - Robotics 102',
+        label: 'RG Birrey - Robotics 102',
         nodeId: 'ENG-102',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Robotics Workshop 102',
         online: true,
         lastFrameAt: new Date(),
@@ -156,9 +158,9 @@ const seedDatabase = async () => {
       },
       {
         cameraId: 'CAM-ENG205',
-        label: 'Engineering Hall - Lab 205',
+        label: 'RG Birrey - Lab 205',
         nodeId: 'ENG-205',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Computer Lab 205',
         online: true,
         lastFrameAt: new Date(Date.now() - 120000),
@@ -166,9 +168,9 @@ const seedDatabase = async () => {
       },
       {
         cameraId: 'CAM-ENG308',
-        label: 'Engineering Hall - Faculty 308',
+        label: 'RG Birrey - Faculty 308',
         nodeId: 'ENG-308',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Faculty Lounge 308',
         online: false,
         lastFrameAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
@@ -185,7 +187,7 @@ const seedDatabase = async () => {
     const alertsRaw = [
       {
         nodeId: 'SC-101',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Lab 101',
         emergencyType: 'gunshot',
         threatStatus: 'verified_threat',
@@ -199,7 +201,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'SC-204',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Lecture Hall 204',
         emergencyType: 'gunshot',
         threatStatus: 'unverified_audio_trigger',
@@ -215,7 +217,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'ENG-102',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Robotics Workshop 102',
         emergencyType: 'medical',
         threatStatus: 'manual_alert',
@@ -229,7 +231,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'ENG-205',
-        building: 'Engineering Hall',
+        building: 'RG Birrey',
         room: 'Computer Lab 205',
         emergencyType: 'fire',
         threatStatus: 'manual_alert',
@@ -243,7 +245,7 @@ const seedDatabase = async () => {
       },
       {
         nodeId: 'SC-310',
-        building: 'Science Complex',
+        building: 'RSY',
         room: 'Chemistry Prep 310',
         emergencyType: 'panic',
         threatStatus: 'manual_alert',

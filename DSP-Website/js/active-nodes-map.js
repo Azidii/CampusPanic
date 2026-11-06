@@ -1,7 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
   const element = document.getElementById('activeThreatMap');
   if (!element || typeof L === 'undefined') return;
-  const map = L.map(element).setView([14.5995, 120.9842], 17);
+  const map = L.map(element);
+  map.fitWorld();
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20
   }).addTo(map);
@@ -14,6 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     node?.audio?.paired ? 'ESP32 paired · offline' : 'No ESP32 paired to this node';
 
   function render(nodes, alerts) {
+    nodes = window.filterBuilding(nodes);
+    alerts = window.filterBuilding(alerts);
+    document.getElementById('mapLocationStatus').textContent = 'Incident locations retain their recorded building and room. Pins use current node coordinates only where the recorded location still matches.';
     group.clearLayers();
     const unresolved = alerts.filter(alert => alert.status !== 'resolved');
     const byNode = new Map(nodes.map(node => [node.nodeId, node]));
@@ -44,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const heading = document.createElement('strong');
       heading.textContent = incidents.length ? [...new Set(incidents.map(label))].join(' / ') : Object.entries(node?.hud?.threats || {}).filter(([, value]) => value === true).map(([key]) => key.toUpperCase()).join(' / ') || 'HARDWARE ALERT';
       const location = document.createElement('p');
-      location.textContent = `${node?.building || first?.building || nodeId}, ${node?.room || first?.room || ''}`;
+      location.textContent = `${first?.building || node?.building || nodeId}, ${first?.room || node?.room || ''}${window.isLegacyBuilding(first?.building || node?.building) ? ' · Building needs correction' : ''}`;
       const hardware = document.createElement('p');
       hardware.className = 'hardware-state';
       hardware.textContent = hardwareText(node);
@@ -54,9 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
       card.append(heading, location, hardware, link);
       sidebar.append(card);
 
-      if (!Number.isFinite(node?.lat) || !Number.isFinite(node?.lng)) {
+      if (!Number.isFinite(node?.lat) || Math.abs(node.lat) > 90 || !Number.isFinite(node?.lng) || Math.abs(node.lng) > 180 || (first && (first.building !== node.building || first.room !== node.room))) {
         const note = document.createElement('p');
-        note.textContent = 'Map location not set. Add coordinates in Security Nodes.';
+        note.textContent = 'No verified coordinates for this incident location. Review it from the incident link.';
         card.append(note);
         continue;
       }

@@ -108,20 +108,42 @@ window.showToast = function (message, type = 'info', duration = 4000) {
 window.escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[c]));
+window.selectedBuilding = () => {
+  const value = new URLSearchParams(window.location.search).get('building') || 'all';
+  return ['all', 'RSY', 'RG Birrey'].includes(value) ? value : 'all';
+};
+window.filterBuilding = rows => rows.filter(row => window.selectedBuilding() === 'all' || row.building === window.selectedBuilding());
+window.isLegacyBuilding = value => !['RSY', 'RG Birrey'].includes(value);
 window.refreshCampus = async function () {
   if (window.campusRefreshing || document.hidden || document.body.classList.contains('page-login')) return;
   window.campusRefreshing = true;
   try {
-    const response = await fetch('/api/live', { cache: 'no-store', signal: AbortSignal.timeout(8000) });
+    const requestedSearch = window.location.search;
+    const query = document.body.classList.contains('page-dashboard') ? new URLSearchParams(requestedSearch) : new URLSearchParams();
+    if (document.body.classList.contains('page-dashboard')) query.set('dashboard', 'true');
+    const response = await fetch('/api/live?' + query, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
     if (response.status === 401 || response.status === 403) { window.location.href = '/login'; return; }
     if (!response.ok) throw new Error('Update unavailable');
-    window.campusState = await response.json();
+    const state = await response.json();
+    if (requestedSearch !== window.location.search) return;
+    window.campusState = state;
     window.dispatchEvent(new CustomEvent('campus:state', { detail: window.campusState }));
   } catch {
     window.dispatchEvent(new CustomEvent('campus:offline'));
   } finally { window.campusRefreshing = false; }
 };
 document.addEventListener('DOMContentLoaded', () => {
+  const building = document.getElementById('buildingFilter');
+  if (building) {
+    building.value = window.selectedBuilding();
+    building.addEventListener('change', () => {
+      const url = new URL(window.location.href);
+      url.searchParams.set('building', building.value); url.searchParams.delete('historyPage');
+      window.history.replaceState(null, '', url);
+      window.refreshCampus();
+    });
+  }
+  document.getElementById('quickAlarmToggleBtn')?.addEventListener('click', () => window.alarmSound?.playAlarm(2000));
   window.refreshCampus();
   setInterval(window.refreshCampus, 2000);
 });

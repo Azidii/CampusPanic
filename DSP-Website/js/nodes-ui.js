@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return data;
   }
   function title(node) { return node.name || node.nodeId; }
-  function location(node) { return `${node.building}, ${node.room}`; }
+  function location(node) { return `${node.building}, ${node.room}${window.isLegacyBuilding?.(node.building) ? ' · Building needs correction' : ''}`; }
   function status(node) { return node.video?.status || 'offline'; }
   function message(text, error = false) {
     const element = document.getElementById('nodeActionMessage');
@@ -216,7 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   function renderGrid() {
     if (!grid) return;
-    const visible = nodes.filter(node => filter === 'all' || (filter === 'live' ? node.video?.live : !node.video?.cameraConnected));
+    const scoped = window.filterBuilding ? window.filterBuilding(nodes) : nodes;
+    const visible = scoped.filter(node => filter === 'all' || (filter === 'live' ? node.video?.live : !node.video?.cameraConnected));
     const ids = new Set(visible.map(node => node.nodeId));
     [...grid.children].forEach(card => { if (!ids.has(card.dataset.nodeId)) { stopPreview(card.querySelector('.node-viewport')); card.remove(); } });
     for (const node of visible) {
@@ -241,7 +242,10 @@ document.addEventListener('DOMContentLoaded', () => {
       updatePreview(card.querySelector('.node-viewport'), node);
     }
     document.getElementById('cctvEmpty').hidden = visible.length > 0;
-    document.getElementById('cctvSummary').textContent = `${nodes.filter(n => n.video?.live).length} live cameras / ${nodes.length} nodes · ${nodes.filter(n => n.audio?.connected).length} ESP32 connected`;
+    document.getElementById('cctvSummary').textContent = `${visible.length} matching nodes · ${scoped.filter(n => n.video?.live).length} live cameras / ${scoped.length} nodes in this building selection`;
+    const empty = document.getElementById('cctvEmpty');
+    empty.querySelector('h2').textContent = nodes.length ? 'No cameras match these filters' : 'No cameras yet';
+    empty.querySelector('p').textContent = nodes.length ? 'Try All buildings or a different connection status.' : 'Add a device and pair its camera to begin monitoring.';
   }
   function renderList() {
     if (!list) return;
@@ -273,7 +277,7 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedId = id;
     expiresAt = null;
     document.getElementById('pairingPanel')?.setAttribute('hidden', '');
-    if (editForm) for (const key of ['name', 'building', 'room', 'lat', 'lng']) editForm.elements[key].value = node[key] ?? '';
+    if (editForm) for (const key of ['name', 'building', 'room', 'lat', 'lng']) if (editForm.elements[key]) editForm.elements[key].value = node[key] ?? '';
     message('');
     espMessage('');
     const pin = document.getElementById('esp32Pin'); if (pin) pin.value = '';
@@ -367,10 +371,12 @@ document.addEventListener('DOMContentLoaded', () => {
   editForm?.addEventListener('submit', event => {
     event.preventDefault();
     const id = selectedId;
-    const values = Object.fromEntries(new FormData(editForm));
+    const current = nodes.find(node => node.nodeId === id);
+    const values = { lat: current?.lat ?? null, lng: current?.lng ?? null, ...Object.fromEntries(new FormData(editForm)) };
     action(async () => {
       await api(`/api/nodes/${encodeURIComponent(id)}`, 'PUT', values);
-      message('Node details saved.');
+      dialog.close();
+      window.showToast('Node details saved.', 'success');
     });
   });
   document.getElementById('pairNodeBtn')?.addEventListener('click', () => {
@@ -419,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'Node created. Use Reconnect / Pair Again to generate a pairing code.');
       createdNodeId = null;
       createdNodePairing = null;
-      window.history.replaceState(null, '', '/cameras');
+      const url = new URL(window.location.href); url.searchParams.delete('created'); window.history.replaceState(null, '', url);
     }
     if (singlePage) {
       const node = nodes.find(n => n.nodeId === singlePage.dataset.nodeId);

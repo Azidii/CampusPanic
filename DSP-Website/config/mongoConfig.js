@@ -1,8 +1,12 @@
 import dns from 'node:dns';
 import { isIP } from 'node:net';
 
-export const DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017/campuspanic';
-export const resolveMongoUri = (env = process.env) => env.MONGODB_URI?.trim() || DEFAULT_MONGODB_URI;
+export const DEFAULT_MONGODB_URI = 'mongodb://127.0.0.1:27017/mainDB';
+export const resolveMongoUri = (env = process.env) => {
+  const uri = env.MONGODB_URI?.trim() || DEFAULT_MONGODB_URI;
+  // MongoDB otherwise silently selects test when an Atlas/replica-set URI omits its path.
+  return uri.replace(/^(mongodb(?:\+srv)?:\/\/[^/?]+)\/?(\?[^#]*)?$/, '$1/mainDB$2');
+};
 
 class MongoConnectionError extends Error {
   constructor(category, message) {

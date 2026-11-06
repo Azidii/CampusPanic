@@ -6,6 +6,7 @@
   <!-- Core Common JavaScript -->
   <script src="/js/common.js"></script>
   <script src="/js/camera-hud.js"></script>
+  <% if (user && page !== "notifications") { %><script src="/js/notifications.js"></script><% } %>
 
   <% if (['all-cams', 'security-nodes', 'cam-view'].includes(page)) { %>
     <script src="/js/nodes-ui.js"></script>

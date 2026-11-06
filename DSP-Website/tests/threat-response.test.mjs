@@ -27,9 +27,9 @@ test('Android CCTV, HUD telemetry, manual ESP32 reporting and detection incident
   const cookie = 'token=' + jwt.sign({ id: String(admin._id) }, process.env.JWT_SECRET);
   const cameraCode = '12345678';
   await Node.create([
-    { nodeId: 'NODE-A', name: 'Entrance', building: 'Lab', room: '101', lat: 14.5, lng: 121,
+    { nodeId: 'NODE-A', name: 'Entrance', building: 'RSY', room: '101', lat: 14.5, lng: 121,
       videoEnabled: true, pairingHash: hashCode(cameraCode), pairingExpiresAt: new Date(Date.now() + 60000) },
-    { nodeId: 'NODE-B', name: 'Library', building: 'Lab', room: '102', videoEnabled: false }
+    { nodeId: 'NODE-B', name: 'Library', building: 'RSY', room: '102', videoEnabled: false }
   ]);
   const server = http.createServer(app);
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -136,8 +136,7 @@ test('Android CCTV, HUD telemetry, manual ESP32 reporting and detection incident
     });
     await t.test('navigation renders requested categories and preserves Security Nodes pairing controls', async () => {
       const html = await (await request('/active-threats-map', { auth: true })).text();
-      for (const label of ['Main Items', 'Dashboard', 'Cam View', 'All Cams (CCTV)', 'CAMPUS GEOMETRY', 'Campus Map',
-        'Active Threats Map', 'LIVE', 'GATEWAY TOOLS', 'Security Nodes', 'SYSTEM &amp; ACCOUNT', 'Profile', 'Settings', 'ADMINISTRATION', 'User Management']) {
+      for (const label of ['Dashboard', 'Cameras', 'Map', 'Active Threats Map', 'LIVE', 'Devices', 'Notifications', 'Settings', 'Users']) {
         assert.ok(html.includes(label), label);
       }
       assert.equal((await request('/active-nodes-map', { auth: true })).status, 200);
@@ -147,11 +146,12 @@ test('Android CCTV, HUD telemetry, manual ESP32 reporting and detection incident
       assert.match(nodes, /\/js\/camera-hud.js/);
     });
     await t.test('older unresolved threats remain in the active map snapshot beyond the feed limit', async () => {
-      await Alert.insertMany(Array.from({ length: 105 }, (_, i) => ({ nodeId: 'NODE-B', building: 'Lab', room: '102',
+      await Alert.insertMany(Array.from({ length: 105 }, (_, i) => ({ nodeId: 'NODE-B', building: 'RSY', room: '102',
         emergencyType: 'medical', threatStatus: 'manual_alert', priority: 2, sequenceNumber: i + 1,
         checksum: 'isolated-test', status: 'resolved', timestamp: new Date(Date.now() + i + 1000) })));
       const data = await (await request('/api/live', { auth: true })).json();
-      assert.equal(data.alerts.length, 100);
+      assert.equal(data.alerts.length, 20);
+      assert.equal(data.counts.total, await Alert.countDocuments());
       assert.ok(data.activeAlerts.some(alert => alert.nodeId === 'NODE-A' && alert.triggerSource === 'smoke_sensor'));
       assert.ok(data.activeAlerts.every(alert => alert.status !== 'resolved'));
     });

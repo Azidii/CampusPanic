@@ -43,7 +43,7 @@
     if (!container) return;
     container.innerHTML = nodes.length ? nodes.map(node => `<div class="node-threat-row"><a href="/cam-view?nodeId=${encodeURIComponent(node.nodeId)}"><strong>${escape(node.name || node.nodeId)}</strong><small>${escape(node.building)}, ${escape(node.room)}</small></a><div class="node-threat-chips">${chips(node.hud)}</div><span class="hardware-state" data-connected="${Boolean(node.hud?.hardware?.connected)}">ESP32 ${node.hud?.hardware?.connected ? 'Online' : node.audio?.paired ? 'Offline' : 'Not paired'}</span></div>`).join('') : '<p>No security nodes yet. Add one in Security Nodes.</p>';
   }
-  window.addEventListener('campus:state', ({ detail }) => renderNodes(detail.nodes || []));
+  window.addEventListener('campus:state', ({ detail }) => renderNodes(window.filterBuilding && document.body.classList.contains('page-dashboard') ? window.filterBuilding(detail.nodes || []) : detail.nodes || []));
   window.addEventListener('campus:offline', () => {
     document.querySelectorAll('.hardware-state').forEach(item => { item.textContent = 'Status unavailable'; item.dataset.connected = false; });
   });

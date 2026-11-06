@@ -26,14 +26,12 @@
               </div>
 
               <div class="theme-picker-group" style="width: 100%;">
-                <div class="theme-card" data-theme-val="dark">
+                <button type="button" class="theme-card" data-theme-val="dark">
                   <div class="theme-preview-box preview-dark"></div>
-                  <div class="theme-name">Security Dark (Recommended)</div>
-                </div>
-                <div class="theme-card" data-theme-val="light">
+                  <div class="theme-name">Security Dark (Recommended)</div></button>
+                <button type="button" class="theme-card" data-theme-val="light">
                   <div class="theme-preview-box preview-light"></div>
-                  <div class="theme-name">Clean Light</div>
-                </div>
+                  <div class="theme-name">Clean Light</div></button>
               </div>
             </div>
           </div>
@@ -47,7 +45,7 @@
           <div class="settings-group">
             <div class="setting-row">
               <div class="setting-info">
-                <div class="setting-title">Verified Threat Audio Siren</div>
+                <label class="setting-title" for="soundToggleInput">Verified Threat Audio Siren</label>
                 <div class="setting-desc">Play acoustic two-tone siren when computer vision verifies an emergency</div>
               </div>
               <label class="switch">
@@ -58,7 +56,7 @@
 
             <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 10px;">
               <div style="display: flex; justify-content: space-between; width: 100%;">
-                <div class="setting-title">Alarm Siren Volume</div>
+                <label class="setting-title" for="volumeSlider">Alarm Siren Volume</label>
                 <span id="volumeValText" style="font-family: var(--font-mono); font-weight: 700; color: #38bdf8;">80%</span>
               </div>
               <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8" style="width: 100%; accent-color: #2563eb;">
@@ -94,6 +92,25 @@
           </div>
         </div>
       </div>
+      <% if (user.role === 'admin') { %>
+      <section class="card alert-reset-section" aria-labelledby="alertResetTitle">
+        <h2 id="alertResetTitle">Alert maintenance</h2>
+        <p>Permanently delete all shared alerts and their incident snapshots. Users, devices, pairings and configuration are preserved. Continuing detections may generate new alerts after the reset.</p>
+        <button class="btn btn-outline" id="reviewAlertReset">Delete all alerts</button>
+        <p id="alertResetResult" role="status"></p>
+      </section>
+      <dialog id="alertResetDialog" class="alert-reset-dialog" aria-labelledby="alertResetDialogTitle">
+        <form id="alertResetForm">
+          <h2 id="alertResetDialogTitle">Delete all alerts permanently?</h2>
+          <p id="alertResetCount"></p>
+          <p>This affects every operator. Incident snapshots are deleted too. Continuing detections may generate new alerts.</p>
+          <label for="alertResetConfirmation">Type DELETE ALL ALERTS to confirm</label>
+          <input class="form-input" id="alertResetConfirmation" required autocomplete="off" pattern="DELETE ALL ALERTS">
+          <div class="feed-actions"><button class="btn btn-outline" type="button" id="cancelAlertReset">Cancel</button><button class="btn btn-danger" type="submit" id="confirmAlertReset">Delete permanently</button></div>
+          <p id="alertResetError" role="alert"></p>
+        </form>
+      </dialog>
+      <% } %>
     </main>
 
     <%- include('partials/footer') %>

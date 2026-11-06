@@ -83,7 +83,7 @@ test('security-node gateway with real model and isolated test database', { timeo
       assert.equal((await request('/api/nodes', { cookie: guard, method: 'POST', body: { name: 'forbidden', building: 'A', room: '1' } })).status, 403);
       assert.equal((await request('/api/nodes', { cookie: admin, method: 'POST', body: { name: '', building: 'A', room: '1' } })).status, 400);
       for (const [name, room] of [['Entrance', 'Hallway'], ['Library', 'Reading room']]) {
-        const response = await request('/api/nodes', { cookie: admin, method: 'POST', body: { name, room, building: 'Test Building' } });
+        const response = await request('/api/nodes', { cookie: admin, method: 'POST', body: { name, room, building: 'RSY' } });
         assert.equal(response.status, 201);
         const result = await response.json(); assert.match(result.pairing.code, /^\d{8}$/);
         assert.equal(result.node.lat, null); assert.equal(result.node.video.live, false);
@@ -137,7 +137,7 @@ test('security-node gateway with real model and isolated test database', { timeo
       return request('/api/camera/connect', { method: 'POST', phone: { code: result.pairing.code } });
     }
     await t.test('metadata edits are allowed only to admins and cannot overwrite protected fields', async () => {
-      const values = { name: '<script>New name</script>', building: 'New Building', room: 'Room 2', lat: 0, lng: 0,
+      const values = { name: '<script>New name</script>', building: 'RG Birrey', room: 'Room 2', lat: 0, lng: 0,
         nodeId: 'OVERRIDE', status: 'active', pairingHash: 'injected' };
       assert.equal((await request(`/api/nodes/${a.node.nodeId}`, { cookie: guard, method: 'PUT', body: values })).status, 403);
       assert.equal((await request(`/api/nodes/${a.node.nodeId}`, { cookie: admin, method: 'PUT', body: values })).status, 200);

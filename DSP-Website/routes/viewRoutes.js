@@ -4,6 +4,7 @@ import { User } from '../models/User.js';
 import { Node } from '../models/Node.js';
 import { Alert } from '../models/Alert.js';
 import { Camera } from '../models/Camera.js';
+import { dashboardFeed, buildingFilter } from '../services/alertFeed.js';
 import { config } from '../config/config.js';
 import { requireViewAuth, requireViewAdmin } from '../middleware/auth.js';
 
@@ -50,26 +51,15 @@ router.get('/logout', (req, res) => {
 // 2. Main Dashboard
 router.get('/', requireViewAuth, async (req, res, next) => {
   try {
-    const [alerts, nodes, totalNodes, activeNodesCount] = await Promise.all([
-      Alert.find().sort({ priority: 1, timestamp: -1 }).limit(100),
-      Node.find().sort({ building: 1, room: 1 }),
-      Node.countDocuments(),
-      Node.countDocuments({ status: 'active' })
-    ]);
-
-    const currentNodes = await videoService.describe(nodes);
-    const counts = {
-      gunshot: alerts.filter((a) => a.emergencyType === 'gunshot').length,
-      medical: alerts.filter((a) => a.emergencyType === 'medical').length,
-      fire: alerts.filter((a) => a.emergencyType === 'fire').length,
-      panic: alerts.filter((a) => a.emergencyType === 'panic').length,
-      unresolved: alerts.filter((a) => a.status !== 'resolved').length,
-      verifiedThreats: alerts.filter((a) => a.threatStatus === 'verified_threat' && a.status !== 'resolved').length
-    };
-
+    const feed = await dashboardFeed(req.user._id, req.query);
+    const currentNodes = await videoService.describe(await Node.find(buildingFilter(req.query.building)).sort({ building: 1, room: 1 }));
+    const { alerts, counts } = feed;
+    const totalNodes = currentNodes.length;
     res.render('dashboard', {
       title: 'Operations Dashboard — CampusPanic',
       page: 'dashboard',
+      feed,
+      building: req.query.building || 'all',
       user: req.user,
       alerts,
       nodes: currentNodes,
@@ -96,6 +86,7 @@ router.get('/cam-view', requireViewAuth, async (req, res, next) => {
     let selectedNode = null;
     let selectedAlert = null;
 
+    if (alertId && !/^[a-f0-9]{24}$/i.test(alertId)) return res.status(400).send('Invalid incident link');
     if (alertId) {
       selectedAlert = await Alert.findById(alertId);
       if (selectedAlert) {
@@ -105,7 +96,7 @@ router.get('/cam-view', requireViewAuth, async (req, res, next) => {
       selectedNode = await Node.findOne({ nodeId });
     }
 
-    if (!selectedNode && !selectedAlert && nodes.length > 0) {
+    if (!nodeId && !alertId && !selectedNode && !selectedAlert && nodes.length > 0) {
       selectedNode = nodes[0];
     }
 
@@ -181,6 +172,10 @@ router.get('/security-nodes', requireViewAuth, (req, res) => {
     title: 'Security Nodes — CampusPanic', page: 'security-nodes', user: req.user
   });
 });
+
+router.get('/notifications', requireViewAuth, (req, res) => res.render('notifications', {
+  title: 'Notifications — CampusPanic', page: 'notifications', user: req.user
+}));
 
 // 8. Profile View
 router.get('/profile', requireViewAuth, (req, res) => {

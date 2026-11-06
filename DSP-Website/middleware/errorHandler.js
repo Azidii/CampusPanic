@@ -5,7 +5,7 @@ export const errorHandler = (err, req, res, next) => {
     const field = Object.keys(err.keyValue || {})[0] || 'field';
     return res.status(409).json({
       success: false,
-      message: `A record with this ${field} already exists.`
+      message: field === 'nameKey' || err.message?.includes('unique_node_name') ? 'A node with this name already exists. Names are unique across all buildings, ignoring capitalization and surrounding spaces.' : `A record with this ${field} already exists.`
     });
   }
 

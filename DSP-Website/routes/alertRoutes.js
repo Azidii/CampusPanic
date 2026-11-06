@@ -1,13 +1,18 @@
 import express from 'express';
-import { body, validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken';
+import { config } from '../config/config.js';
+import { buildingFilter, incidentFilter, pageNumber, alertCounts } from '../services/alertFeed.js';
+import { resetPreview, deleteAllAlerts, reconcileNodeIncidents } from '../services/alertReset.js';
+import { incidentWrite } from '../services/incidentGuard.js';
 import { Alert } from '../models/Alert.js';
 import { Node } from '../models/Node.js';
-import { requireAuth } from '../middleware/auth.js';
+import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { requireDeviceApiKey } from '../middleware/deviceAuth.js';
-import { uploadAlertImage, saveBase64Image } from '../middleware/upload.js';
+import { uploadAlertImage, saveBase64Image, saveAlertImage } from '../middleware/upload.js';
 import { verifyChecksum } from '../utils/checksum.js';
 
 const router = express.Router();
+router.param('id', (req, res, next, id) => /^[a-f0-9]{24}$/i.test(id) ? next() : res.status(400).json({success:false,message:'Invalid incident ID.'}));
 
 const calculatePriority = (threatStatus, emergencyType) => {
   if (threatStatus === 'verified_threat' || (emergencyType === 'gunshot' && threatStatus === 'verified_threat')) {
@@ -21,71 +26,46 @@ const calculatePriority = (threatStatus, emergencyType) => {
 
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const { status, type, building, threatStatus, limit = 50, page = 1 } = req.query;
-    const query = {};
-
-    if (status && status !== 'all') {
-      query.status = status;
-    }
-    if (type && type !== 'all') {
-      query.emergencyType = type;
-    }
-    if (building && building !== 'all') {
-      query.building = building;
-    }
-    if (threatStatus && threatStatus !== 'all') {
-      query.threatStatus = threatStatus;
-    }
-
-    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
-
-    const [alerts, total, countsRaw] = await Promise.all([
-      Alert.find(query)
-        .sort({ priority: 1, timestamp: -1 })
-        .skip(skip)
-        .limit(parseInt(limit, 10)),
-      Alert.countDocuments(query),
-      Alert.aggregate([
-        {
-          $group: {
-            _id: '$emergencyType',
-            count: { $sum: 1 },
-            unresolved: {
-              $sum: { $cond: [{ $ne: ['$status', 'resolved'] }, 1, 0] }
-            }
-          }
-        }
-      ])
+    const query = incidentFilter(req.query), limit = pageNumber(req.query.limit, 50, 100), page = pageNumber(req.query.page);
+    const [alerts, total, counts] = await Promise.all([
+      Alert.find(query).sort({ priority: 1, timestamp: -1, _id: -1 }).skip((page - 1) * limit).limit(limit),
+      Alert.countDocuments(query), alertCounts(buildingFilter(req.query.building))
     ]);
+    res.set('Cache-Control', 'no-store').json({ success: true, count: alerts.length, total, page,
+      totalPages: Math.max(1, Math.ceil(total / limit)), counts, alerts });
+  } catch (error) { next(error); }
+});
 
-    const counts = {
-      gunshot: 0,
-      medical: 0,
-      fire: 0,
-      panic: 0,
-      total,
-      unresolvedTotal: 0
-    };
+router.post('/clear-resolved', requireAuth, incidentWrite(async (req, res) => {
+  const scope = buildingFilter(req.body.building);
+  const result = await Alert.updateMany({ ...scope, status: 'resolved', clearedBy: { $ne: req.user._id } },
+    { $addToSet: { clearedBy: req.user._id } });
+  res.json({ success: true, cleared: result.modifiedCount });
+}));
 
-    countsRaw.forEach((c) => {
-      if (counts[c._id] !== undefined) {
-        counts[c._id] = c.count;
-      }
-      counts.unresolvedTotal += c.unresolved;
-    });
+router.get('/reset-preview', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const preview = await resetPreview();
+    const confirmationToken = jwt.sign({ ...preview, purpose: 'alert-reset', sub: String(req.user._id) }, config.jwtSecret, { expiresIn: '5m' });
+    res.set('Cache-Control', 'no-store').json({ success: true, count: preview.count, confirmationToken });
+  } catch (error) { next(error); }
+});
 
-    return res.status(200).json({
-      success: true,
-      count: alerts.length,
-      total,
-      page: parseInt(page, 10),
-      totalPages: Math.ceil(total / parseInt(limit, 10)) || 1,
-      counts,
-      alerts
-    });
-  } catch (err) {
-    next(err);
+router.delete('/', requireAuth, requireAdmin, async (req, res, next) => {
+  if (req.get('X-CampusPanic-Action') !== 'reset-alerts' || req.body.confirmation !== 'DELETE ALL ALERTS') {
+    return res.status(400).json({ success: false, message: 'Explicit alert deletion confirmation required.' });
   }
+  let expected;
+  try {
+    expected = jwt.verify(req.body.confirmationToken, config.jwtSecret);
+    if (expected.purpose !== 'alert-reset' || expected.sub !== String(req.user._id)) throw new Error();
+  } catch { return res.status(400).json({ success: false, message: 'Confirmation expired or invalid. Review the alert count again.' }); }
+  try {
+    const result = await deleteAllAlerts(expected);
+    const success = result.remaining === 0 && result.reconciled && !result.failures.length;
+    res.status(success ? 200 : 207).json({ success, ...result,
+      message: success ? 'Alerts deleted. Continuing detections may generate new alerts.' : 'Reset partially completed. Review retained incidents and retry; continuing detections may generate new alerts.' });
+  } catch (error) { next(error); }
 });
 
 router.get('/:id', requireAuth, async (req, res, next) => {
@@ -100,7 +80,7 @@ router.get('/:id', requireAuth, async (req, res, next) => {
   }
 });
 
-router.patch('/:id', requireAuth, async (req, res, next) => {
+router.patch('/:id', requireAuth, incidentWrite(async (req, res, next) => {
   try {
     const { id } = req.params;
     const { action, status } = req.body;
@@ -110,6 +90,8 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Alert not found.' });
     }
 
+    if ((status && !['new', 'acknowledged', 'resolved'].includes(status)) ||
+        (!status && !['acknowledge', 'resolve'].includes(action))) return res.status(400).json({ success: false, message: 'Choose acknowledge or resolve.' });
     const newStatus = status || (action === 'resolve' ? 'resolved' : 'acknowledged');
 
     alert.status = newStatus;
@@ -130,19 +112,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
     }
     await alert.save();
 
-    const unresolvedCount = await Alert.countDocuments({
-      nodeId: alert.nodeId,
-      status: { $ne: 'resolved' }
-    });
-
-    if (unresolvedCount === 0) {
-      await Node.findOneAndUpdate(
-        { nodeId: alert.nodeId },
-        { status: 'online' }
-      );
-    }
-
-
+    await reconcileNodeIncidents([alert.nodeId]);
 
     return res.status(200).json({
       success: true,
@@ -152,13 +122,13 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-});
+}));
 
 router.post(
   '/ingest',
   requireDeviceApiKey,
   uploadAlertImage.single('image'),
-  async (req, res, next) => {
+  incidentWrite(async (req, res, next) => {
     try {
       let packet = req.body;
 
@@ -248,7 +218,7 @@ router.post(
 
       let imageUrl = null;
       if (req.file) {
-        imageUrl = `/uploads/alerts/${req.file.filename}`;
+        imageUrl = saveAlertImage(req.file.buffer);
       } else if (imageBase64 || packet.image) {
         imageUrl = saveBase64Image(imageBase64 || packet.image);
       }
@@ -274,8 +244,6 @@ router.post(
       await Node.findOneAndUpdate(
         { nodeId: nodeId.toUpperCase() },
         {
-          building,
-          room,
           status: 'active',
           lastSeen: new Date()
         },
@@ -294,7 +262,7 @@ router.post(
     } catch (err) {
       next(err);
     }
-  }
+  })
 );
 
 export default router;

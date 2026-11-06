@@ -15,7 +15,7 @@ requests; alert and node information refreshes every two seconds.
    environment file is needed. Add optional video settings to that same file
    only when the defaults below do not match your machine.
 4. For an independent household, use
-   `MONGODB_URI=mongodb://127.0.0.1:27017/campuspanic` and start local MongoDB.
+   `MONGODB_URI=mongodb://127.0.0.1:27017/mainDB` and start local MongoDB.
    Atlas remains supported through `MONGODB_URI`; it requires internet and the
    laptop's IP must be allowed in Atlas. Database failure stops startup rather
    than silently replacing saved nodes with a temporary database.
@@ -61,13 +61,13 @@ keys in the same existing `.env` (do not duplicate a key that is already present
   on laptop capacity.
 
 Restart the website after changing environment settings. Your existing `.env`
-is not modified by this change.
+must explicitly select `/mainDB` after a verified migration. Preserve all unrelated keys.
 
 ## Create and connect a security node
 
 1. Sign in as an administrator and open **Security Nodes** (`/security-nodes`).
    Existing `/streamer` bookmarks redirect there.
-2. Enter a name, building/area and room/location. Map latitude and longitude are
+2. Enter a unique node name, choose **RSY** or **RG Birrey**, and enter the room/location. Map latitude and longitude are
    optional; provide both if placing the node on a map. Click **Create Node & Get
    Pairing Code**.
 3. Creation automatically opens **All Cams (CCTV)** and the new node's enlarged
@@ -122,7 +122,7 @@ metadata is periodically saved to MongoDB. Saved nodes survive website restarts;
 active streams reconnect. Camera connectivity is separate from incident status
 (`active` still means an emergency in the existing alert workflow).
 
-In each node's **Audio · ESP32** section, administrators can discover recently
+In each node's **Audio ï¿½ ESP32** section, administrators can discover recently
 announced ESP32 devices, select a hardware ID and enter the random 8-digit PIN
 shown by that device in Serial Monitor (or its future OLED). PINs expire in five
 minutes; five failed attempts require a refreshed PIN. Devices must first join

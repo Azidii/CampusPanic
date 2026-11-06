@@ -1,0 +1,26 @@
+scope: One campus shared by authorized operators and administrators
+storage:
+  users:
+    fields: [name, email, passwordHash, role, isActive, assignedBuilding]
+    readers: [account_owner, administrators]
+    notes: Password hashes are excluded from API serialization.
+  nodes:
+    fields: [nodeId, name, building, room, optional_coordinates, device_pairing_state]
+    readers: [operators, administrators]
+    writers: [administrators, authenticated_paired_devices_for_telemetry]
+  incidents:
+    fields: [nodeId, emergency_type, timestamps, detection_confidence, operator_acknowledgement, snapshot_reference, clearedBy]
+    readers: [operators, administrators]
+    retention: Incident records remain until an administrator explicitly confirms permanent deletion.
+    clearing: clearedBy is private per-user dashboard display state; shared history remains available.
+  snapshots:
+    location: DSP-Website/uploads/alerts
+    readers: [authenticated_operators, administrators]
+    retention: IMAGE_RETENTION_HOURS, hourly cleanup while the server is running
+  live_video_and_audio:
+    processing: Private loopback Python workers, transient memory
+    readers: [authenticated_operators, administrators]
+credentials:
+  locations: [DSP-Website/.env, ESP32/.env, ESP32_runtime_storage]
+  git_policy: Local environment files and device credentials must remain untracked.
+not_collected: [payments, public_user_registration]

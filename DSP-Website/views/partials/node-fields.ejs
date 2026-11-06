@@ -5,7 +5,12 @@
 
 <div class="form-group">
   <label class="form-label" for="<%= prefix %>Building">Building / Area</label>
-  <input class="form-input" id="<%= prefix %>Building" name="building" required maxlength="100" placeholder="e.g. Engineering Complex">
+  <select class="form-input" id="<%= prefix %>Building" name="building" required aria-describedby="<%= prefix %>BuildingHelp">
+    <option value="" disabled selected>Choose a building</option>
+    <option value="RSY">RSY</option>
+    <option value="RG Birrey">RG Birrey</option>
+  </select>
+  <small id="<%= prefix %>BuildingHelp">Legacy locations must be corrected explicitly before saving.</small>
 </div>
 
 <div class="form-group">
@@ -29,5 +34,5 @@
       <input class="form-input font-mono" id="<%= prefix %>Lng" name="lng" type="number" step="any" min="-180" max="180" placeholder="120.9842">
     </div>
   </div>
-  <p class="nodes-hint">Coordinates link this node to the tactical radar and 2D campus geometry.</p>
+  <p class="nodes-hint">Only enter verified coordinates. Leave both blank if the location is unknown.</p>
 </details>

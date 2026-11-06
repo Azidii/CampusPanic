@@ -1,291 +1,51 @@
 <%- include('partials/head') %>
-
 <div class="app-container">
   <%- include('partials/sidebar') %>
-
   <div class="main-content">
     <%- include('partials/navbar') %>
-
     <main class="page-body page-body-dashboard">
-      <section class="node-threat-panel" aria-labelledby="nodeThreatTitle">
-        <div class="node-threat-heading"><h2 id="nodeThreatTitle">Device status</h2><a href="/security-nodes">Manage devices →</a></div>
-        <div id="nodeThreatRows"><p>Checking connected hardware…</p></div>
+      <div class="feed-heading dashboard-heading"><div><h1>Dashboard</h1><p>Campus incidents, live signals, and response activity.</p></div><p id="dashboardConnection" class="dashboard-connection" role="status">Updating incident reports…</p></div>
+      <p id="outsideIncidents"><%= feed.outsideOpen %> open incidents outside this building selection. <a href="/notifications">Campus-wide notifications →</a></p>
+      <section class="stats-grid" aria-label="Incident totals in the selected building, including resolved and cleared incidents">
+        <% for (const [type, label] of [['gunshot','Gunshot'],['medical','Medical'],['fire','Fire']]) { %>
+          <div class="stat-pod pod-<%= type %>"><span class="stat-label"><%= label %></span><span class="stat-period">All time</span><span class="stat-value" id="count-<%= type %>"><%= counts[type] %></span></div>
+        <% } %>
+        <div class="stat-pod pod-nodes"><span class="stat-label">Connected nodes</span><span class="stat-period">Live coverage</span><span class="stat-value" id="count-active-nodes"><%= activeNodesCount %> / <%= totalNodes %></span></div>
       </section>
-      <!-- 1. Stats Overview Grid - Tactical Telemetry Pods -->
-      <section class="stats-grid">
-        <!-- Gunshot Alerts Pod -->
-        <div class="stat-pod pod-gunshot <%= (counts.gunshot || 0) > 0 ? 'has-alert' : 'is-nominal' %>">
-          <div class="pod-top-row">
-            <div class="pod-icon-badge" aria-hidden="true">&bull;</div>
-            <span class="pod-status-tag <%= (counts.gunshot || 0) > 0 ? 'status-critical' : 'status-nominal' %>">
-              <%= (counts.gunshot || 0) > 0 ? 'CRITICAL' : 'NOMINAL' %>
-            </span>
-          </div>
-          <div class="pod-mid-row">
-            <div class="stat-value <%= (counts.gunshot || 0) === 0 ? 'is-zero' : '' %>" id="count-gunshot"><%= counts.gunshot || 0 %></div>
-          </div>
-          <div class="pod-bottom-row">
-            <span class="stat-label">Gunshot Alerts</span>
-          </div>
-          <div class="pod-accent-bar"></div>
-        </div>
-
-        <!-- Medical Emergencies Pod -->
-        <div class="stat-pod pod-medical <%= (counts.medical || 0) > 0 ? 'has-alert' : 'is-nominal' %>">
-          <div class="pod-top-row">
-            <div class="pod-icon-badge" aria-hidden="true">+</div>
-            <span class="pod-status-tag <%= (counts.medical || 0) > 0 ? 'status-active' : 'status-nominal' %>">
-              <%= (counts.medical || 0) > 0 ? 'ACTIVE' : 'NOMINAL' %>
-            </span>
-          </div>
-          <div class="pod-mid-row">
-            <div class="stat-value <%= (counts.medical || 0) === 0 ? 'is-zero' : '' %>" id="count-medical"><%= counts.medical || 0 %></div>
-          </div>
-          <div class="pod-bottom-row">
-            <span class="stat-label">Medical Emergencies</span>
-          </div>
-          <div class="pod-accent-bar"></div>
-        </div>
-
-        <!-- Fire Alarms Pod -->
-        <div class="stat-pod pod-fire <%= (counts.fire || 0) > 0 ? 'has-alert' : 'is-nominal' %>">
-          <div class="pod-top-row">
-            <div class="pod-icon-badge" aria-hidden="true">&Delta;</div>
-            <span class="pod-status-tag <%= (counts.fire || 0) > 0 ? 'status-active' : 'status-nominal' %>">
-              <%= (counts.fire || 0) > 0 ? 'ACTIVE' : 'STANDBY' %>
-            </span>
-          </div>
-          <div class="pod-mid-row">
-            <div class="stat-value <%= (counts.fire || 0) === 0 ? 'is-zero' : '' %>" id="count-fire"><%= counts.fire || 0 %></div>
-          </div>
-          <div class="pod-bottom-row">
-            <span class="stat-label">Fire Alarms</span>
-          </div>
-          <div class="pod-accent-bar"></div>
-        </div>
-
-        <!-- Manual Panics Pod -->
-        <div class="stat-pod pod-panic <%= (counts.panic || 0) > 0 ? 'has-alert' : 'is-nominal' %>">
-          <div class="pod-top-row">
-            <div class="pod-icon-badge" aria-hidden="true">!</div>
-            <span class="pod-status-tag <%= (counts.panic || 0) > 0 ? 'status-active' : 'status-nominal' %>">
-              <%= (counts.panic || 0) > 0 ? 'ACTIVE' : 'NOMINAL' %>
-            </span>
-          </div>
-          <div class="pod-mid-row">
-            <div class="stat-value <%= (counts.panic || 0) === 0 ? 'is-zero' : '' %>" id="count-panic"><%= counts.panic || 0 %></div>
-          </div>
-          <div class="pod-bottom-row">
-            <span class="stat-label">Manual Panics</span>
-          </div>
-          <div class="pod-accent-bar"></div>
-        </div>
-
-        <!-- Active Nodes Pod -->
-        <div class="stat-pod pod-active-nodes is-nominal">
-          <div class="pod-top-row">
-            <div class="pod-icon-badge" aria-hidden="true">&check;</div>
-            <span class="pod-status-tag status-nominal">ONLINE</span>
-          </div>
-          <div class="pod-mid-row">
-            <div class="stat-value" id="count-active-nodes"><%= activeNodesCount || 0 %> / <%= totalNodes || 0 %></div>
-          </div>
-          <div class="pod-bottom-row">
-            <span class="stat-label">Active Nodes</span>
-            <div class="node-health-progress-bar" title="Sensor node connectivity ratio">
-              <div class="node-health-progress-fill" id="nodeHealthProgressFill" style="width: <%= totalNodes > 0 ? Math.round((activeNodesCount / totalNodes) * 100) : 0 %>%;"></div>
-            </div>
-          </div>
-          <div class="pod-accent-bar"></div>
-        </div>
+      <div id="dashboardThreat" aria-live="polite"></div>
+      <details id="incidentFilters" class="dashboard-filter-panel" open><summary>Filter incidents</summary>
+      <section class="dashboard-toolbar" aria-label="Incident filters">
+        <%- include('partials/building-filter') %>
+        <div class="feed-filter"><label for="incidentType">Incident type</label><select id="incidentType" class="form-input"><option value="all">All types</option><option value="gunshot">Gunshot</option><option value="medical">Medical</option><option value="fire">Fire</option><option value="panic">Panic</option></select></div>
+        <div class="feed-filter"><label for="incidentStatus">Open status</label><select id="incidentStatus" class="form-input"><option value="all">All open</option><option value="new">New</option><option value="acknowledged">Acknowledged</option></select></div>
+        <div class="feed-filter feed-search"><label for="alertSearchInput">Search incidents</label><input id="alertSearchInput" class="form-input" maxlength="100" placeholder="Room, building, node or operator"></div>
       </section>
-
-      <!-- 2. Latest Verified Threat Alert Banner (High-Priority Alert Strip) -->
-      <% 
-        const latestVerified = alerts.find(a => a.threatStatus === 'verified_threat' && a.status !== 'resolved');
-        if (latestVerified) { 
-      %>
-        <div class="latest-threat-banner">
-          <div class="threat-banner-left">
-            <div class="threat-alert-icon">!</div>
-            <div>
-              <div class="threat-headline">CRITICAL THREAT: <%= latestVerified.emergencyType.toUpperCase() %> VERIFIED IN <%= latestVerified.room %></div>
-              <div class="threat-subtext">
-                <%= latestVerified.building %> &bull; Node <%= latestVerified.nodeId %> &bull; Firearm Vision: <%= latestVerified.firearmConfidence == null ? 'Unavailable' : Math.round(latestVerified.firearmConfidence * 100) + '%' %> &bull; TinyML Audio: <%= latestVerified.audioConfidence == null ? 'Unavailable' : Math.round(latestVerified.audioConfidence * 100) + '%' %>
-              </div>
-            </div>
-          </div>
-          <div>
-            <a href="/cam-view?nodeId=<%= latestVerified.nodeId %>&alertId=<%= latestVerified._id %>" class="btn btn-danger">
-              Review incident &rarr;
-            </a>
-          </div>
-        </div>
-      <% } %>
-
-      <!-- 3. Unified Segmented Filter & Command Bar -->
-      <section class="dashboard-toolbar">
-        <div class="toolbar-left-group">
-          <!-- Type Segmented Control -->
-          <div class="segmented-control type-segmented-control" role="group" aria-label="Filter by incident type">
-            <button class="filter-chip filter-type-btn active" data-type="all">
-              <span>All</span>
-              <span class="segmented-pill-count" id="pill-count-all"><%= alerts.length %></span>
-            </button>
-            <button class="filter-chip filter-type-btn" data-type="gunshot">
-              <span>Gunshot</span>
-              <span class="segmented-pill-count" id="pill-count-gunshot"><%= counts.gunshot || 0 %></span>
-            </button>
-            <button class="filter-chip filter-type-btn" data-type="medical">
-              <span>Medical</span>
-              <span class="segmented-pill-count" id="pill-count-medical"><%= counts.medical || 0 %></span>
-            </button>
-            <button class="filter-chip filter-type-btn" data-type="fire">
-              <span>Fire</span>
-              <span class="segmented-pill-count" id="pill-count-fire"><%= counts.fire || 0 %></span>
-            </button>
-            <button class="filter-chip filter-type-btn" data-type="panic">
-              <span>Panic</span>
-              <span class="segmented-pill-count" id="pill-count-panic"><%= counts.panic || 0 %></span>
-            </button>
-          </div>
-
-          <div class="toolbar-divider" aria-hidden="true"></div>
-
-          <!-- Status Segmented Control -->
-          <div class="segmented-control status-segmented-control" role="group" aria-label="Filter by incident status">
-            <button class="filter-chip filter-status-btn active" data-status="all">All Status</button>
-            <button class="filter-chip filter-status-btn" data-status="new">New</button>
-            <button class="filter-chip filter-status-btn" data-status="acknowledged">Acknowledged</button>
-            <button class="filter-chip filter-status-btn" data-status="resolved">Resolved</button>
-          </div>
-        </div>
-
-        <!-- Search Input with Keyboard Shortcut -->
-        <div class="toolbar-search-wrap">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </details>
+      <section aria-labelledby="openIncidentTitle"><div class="feed-heading"><h2 id="openIncidentTitle">Open incidents</h2><span id="openIncidentCount"><%= alerts.length %> matching</span></div>
+        <div class="alert-feed-list" id="alertFeedList"><% for (const a of alerts) { %><%- include('partials/incident-card', {a}) %><% } %></div>
+        <div id="alertEmptyState" class="radar-empty-state" data-connected="<%= activeNodesCount %>" data-total="<%= totalNodes %>" <%= alerts.length ? 'hidden' : '' %>>
+          <svg class="radar-display" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+            <circle class="radar-ground" cx="100" cy="100" r="94"/>
+            <g class="radar-grid" fill="none"><circle cx="100" cy="100" r="88" stroke-dasharray="2 6"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="38"/><path d="M12 100h176M100 12v176"/></g>
+            <g class="radar-sweep"><foreignObject x="12" y="12" width="176" height="176"><div xmlns="http://www.w3.org/1999/xhtml" class="radar-scan-gradient"></div></foreignObject><path d="M100 100V12" stroke="currentColor" stroke-width="1.5"/></g>
+            <circle class="radar-center" cx="100" cy="100" r="6"/>
           </svg>
-          <input type="text" id="alertSearchInput" class="form-input search-input" placeholder="Search room, building, node...">
-          <kbd class="search-kbd-badge" title="Press / to search">/</kbd>
+          <div class="radar-copy"><h3 id="radarTitle">No open incidents</h3><p id="radarDescription">No open incidents in this building selection.</p><p class="radar-connection"><span class="radar-status-dot" aria-hidden="true"></span><span id="radarConnection">Waiting for a live update</span></p></div>
         </div>
       </section>
-
-      <!-- 4. 2-Column Tactical Split Command View -->
-      <div class="dashboard-split-workspace dashboard-single-column">
-        <!-- Primary Alert Feed Panel (Left 65%) -->
-        <div class="workspace-main-panel">
-          <section class="alert-feed-list" id="alertFeedList">
-            <% if (alerts && alerts.length > 0) { %>
-              <% alerts.forEach(function(a) { 
-                   let threatBadgeClass = 'badge-medical';
-                   if (a.threatStatus === 'verified_threat') threatBadgeClass = 'badge-verified-threat';
-                   else if (a.threatStatus === 'unverified_audio_trigger') threatBadgeClass = 'badge-unverified-audio';
-              %>
-                <div class="alert-card priority-<%= a.priority %>" id="alert-card-<%= a._id %>" data-type="<%= a.emergencyType %>" data-status="<%= a.status %>">
-                  <div class="alert-card-header">
-                    <div class="alert-badges">
-                      <span class="badge <%= threatBadgeClass %>"><%= a.threatStatus.replace(/_/g, ' ') %></span>
-                      <span class="badge badge-<%= a.emergencyType %>"><%= a.emergencyType %></span>
-                      <div class="status-badge-wrap">
-                        <% if (a.status === 'new') { %>
-                          <span class="badge badge-status-new">NEW INCIDENT</span>
-                        <% } else if (a.status === 'acknowledged') { %>
-                          <span class="badge badge-status-ack">ACKNOWLEDGED BY <%= a.acknowledgedBy || 'OPERATOR' %></span>
-                        <% } else { %>
-                          <span class="badge badge-status-resolved">RESOLVED</span>
-                        <% } %>
-                      </div>
-                    </div>
-                    <div class="alert-time">
-                      <%= new Date(a.timestamp).toLocaleTimeString() %> (Seq #<%= a.sequenceNumber %>)
-                    </div>
-                  </div>
-
-                  <div class="alert-card-body">
-                    <div class="alert-location">
-                      <div>
-                        <div class="location-room"><%= a.room %></div>
-                        <div class="location-building"><%= a.building %></div>
-                      </div>
-                      <span class="location-node"><%= a.nodeId %></span>
-                    </div>
-
-                    <div class="alert-telemetry">
-                      <% if (a.audioConfidence !== null && a.audioConfidence !== undefined) { %>
-                        <div class="telemetry-item">
-                          <span>Audio TinyML:</span>
-                          <span class="telemetry-val"><%= Math.round(a.audioConfidence * 100) %>%</span>
-                        </div>
-                      <% } %>
-
-                      <% if (a.firearmConfidence !== null && a.firearmConfidence !== undefined) { %>
-                        <div class="telemetry-item">
-                          <span>Firearm Vision:</span>
-                          <span class="telemetry-val" style="color: <%= a.firearmConfidence > 0.5 ? 'var(--threat-verified)' : '#f97316' %>;">
-                            <%= Math.round(a.firearmConfidence * 100) %>%
-                          </span>
-                        </div>
-                      <% } %>
-                    </div>
-                  </div>
-
-                  <div class="alert-card-actions">
-                    <a href="/cam-view?nodeId=<%= a.nodeId %>&alertId=<%= a._id %>" class="btn btn-sm btn-outline">
-                      View camera &rarr;
-                    </a>
-
-                    <div class="alert-action-btns">
-                      <% if (a.status === 'new') { %>
-                        <button class="btn btn-sm btn-warning alert-action-trigger" data-alert-id="<%= a._id %>" data-action="acknowledge">
-                          Acknowledge
-                        </button>
-                        <button class="btn btn-sm btn-success alert-action-trigger" data-alert-id="<%= a._id %>" data-action="resolve">
-                          Resolve
-                        </button>
-                      <% } else if (a.status === 'acknowledged') { %>
-                        <button class="btn btn-sm btn-success alert-action-trigger" data-alert-id="<%= a._id %>" data-action="resolve">
-                          Mark Resolved
-                        </button>
-                      <% } else { %>
-                        <span style="font-size: 0.8rem; color: var(--status-online); font-weight: 600;">Incident Closed</span>
-                      <% } %>
-                    </div>
-                  </div>
-                </div>
-              <% }); %>
-            <% } %>
-
-            <!-- Radar / Telemetry Pulse Empty State -->
-            <div id="alertEmptyState" class="alert-empty-state radar-empty-state" style="display: <%= alerts && alerts.length > 0 ? 'none' : 'flex' %>;">
-              <div class="radar-scan-box">
-                <div class="radar-scan-beam"></div>
-                <svg class="radar-grid-svg" viewBox="0 0 140 140" width="140" height="140">
-                  <circle cx="70" cy="70" r="62" fill="none" stroke="rgba(16, 185, 129, 0.15)" stroke-width="1" stroke-dasharray="3 3"/>
-                  <circle cx="70" cy="70" r="44" fill="none" stroke="rgba(16, 185, 129, 0.22)" stroke-width="1"/>
-                  <circle cx="70" cy="70" r="26" fill="none" stroke="rgba(16, 185, 129, 0.3)" stroke-width="1"/>
-                  <circle cx="70" cy="70" r="8" fill="rgba(16, 185, 129, 0.25)" stroke="#10B981" stroke-width="1.5"/>
-                  <line x1="8" y1="70" x2="132" y2="70" stroke="rgba(16, 185, 129, 0.18)" stroke-width="1"/>
-                  <line x1="70" y1="8" x2="70" y2="132" stroke="rgba(16, 185, 129, 0.18)" stroke-width="1"/>
-                </svg>
-              </div>
-              <div class="radar-empty-title">No Active Threats Detected</div>
-              <div class="radar-empty-subtitle">All acoustic &amp; computer vision nodes reporting within nominal thresholds</div>
-              <div class="radar-heartbeat-pill">
-                <span class="heartbeat-pulse-dot"></span>
-                <span id="radarHeartbeatTimer">Last heartbeat check: 2s ago</span>
-              </div>
-            </div>
-          </section>
-        </div>
-
-      </div>
+      <details class="node-threat-panel"><summary>Device status in this building selection</summary><div id="nodeThreatRows"><p>Checking connected hardware…</p></div><a href="/security-nodes">Manage devices →</a></details>
+      <section class="resolved-history" aria-labelledby="resolvedTitle">
+        <div class="feed-heading"><h2 id="resolvedTitle">Resolved history</h2><div class="feed-actions"><label class="checkbox-label"><input type="checkbox" id="showCleared"> Show cleared</label><button class="btn btn-outline btn-sm" id="clearResolved">Clear resolved</button></div></div>
+        <p>Clearing hides resolved incidents for your account only. History, notifications and incident links stay available.</p>
+        <details id="historyDetails"><summary id="historySummary">Browse resolved incidents</summary>
+        <div id="resolvedFeed" class="alert-feed-list"><% for (const a of feed.history) { %><%- include('partials/incident-card', {a}) %><% } %></div>
+        <p id="resolvedEmpty" class="feed-empty" <%= feed.history.length ? 'hidden' : '' %>>No resolved incidents match. Use Show cleared to include incidents you cleared.</p>
+        <nav class="feed-pagination" aria-label="Resolved incident pages"><button class="btn btn-outline btn-sm" id="historyPrevious">Previous</button><span id="historyPage" role="status">Page <%= feed.historyPage %> of <%= feed.historyPages %> · <%= feed.historyTotal %> resolved incidents</span><button class="btn btn-outline btn-sm" id="historyNext">Next</button></nav>
+        </details>
+      </section>
+      <script id="dashboardData" type="application/json"><%- JSON.stringify(feed).replace(/</g, '\\u003c') %></script>
     </main>
-
     <%- include('partials/footer') %>
   </div>
 </div>
-
 <%- include('partials/scripts') %>
-

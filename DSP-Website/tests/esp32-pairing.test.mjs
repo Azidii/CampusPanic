@@ -25,8 +25,8 @@ async function setup() {
       email: `${role}@test.invalid`, role, passwordHash: 'test-only-fixture', isActive: true });
     tokens[role] = jwt.sign({ id: String(user._id) }, process.env.JWT_SECRET);
   }
-  await Node.create([{ nodeId: 'NODE-TEST-A', name: 'Engineering lab', building: 'Engineering', room: 'Lab 101', videoEnabled: false },
-    { nodeId: 'NODE-TEST-B', name: 'Library entrance', building: 'Library', room: 'Entrance', videoEnabled: false }]);
+  await Node.create([{ nodeId: 'NODE-TEST-A', name: 'Engineering lab', building: 'RSY', room: 'Lab 101', videoEnabled: false },
+    { nodeId: 'NODE-TEST-B', name: 'Library entrance', building: 'RG Birrey', room: 'Entrance', videoEnabled: false }]);
   const wrapper = express();
   if (process.env.ESP_PREVIEW === '1') wrapper.get('/__ui', async (req, res) => {
     if (req.query.reset === '1') {
@@ -100,7 +100,7 @@ if (process.env.ESP_PREVIEW === '1') {
       for (let index = 0; index < 2; index++) assert.equal((await request('/api/esp32/alert', { method: 'POST', token: a.token, body: alert })).status, 200);
       assert.equal(await Alert.countDocuments(), 1);
       const saved = await Alert.findOne();
-      assert.equal(saved.building, 'Engineering'); assert.equal(saved.room, 'Lab 202');
+      assert.equal(saved.building, 'RSY'); assert.equal(saved.room, 'Lab 202');
       assert.equal(saved.threatStatus, 'manual_alert'); assert.equal(saved.audioConfidence, null);
       assert.equal((await request('/api/esp32/alert', { method: 'POST', token: a.token,
         body: { ...protectedBody, sequenceNumber: 2, source: 'smoke_sensor' } })).status, 200);

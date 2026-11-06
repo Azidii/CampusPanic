@@ -6,6 +6,7 @@ import { Alert } from '../models/Alert.js';
 import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { hash, sameHash, fresh } from '../services/espDevices.js';
 import { computeAlertChecksum } from '../utils/checksum.js';
+import { incidentWrite } from '../services/incidentGuard.js';
 
 const router = express.Router();
 const wrap = fn => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -112,7 +113,7 @@ router.delete('/nodes/:nodeId', requireAuth, requireAdmin, wrap(async (req, res)
   res.json({ success: true });
 }));
 
-router.post('/alert', authenticate, wrap(async (req, res) => {
+router.post('/alert', authenticate, incidentWrite(async (req, res) => {
   const { emergencyType, sequenceNumber, source = 'manual_button' } = req.body;
   if (!['fire', 'medical', 'gunshot'].includes(emergencyType) || !Number.isInteger(sequenceNumber) || sequenceNumber < 1 ||
       sequenceNumber > 0xffffffff || !['manual_button', 'smoke_sensor'].includes(source) ||

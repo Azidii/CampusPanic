@@ -5,6 +5,9 @@ import { DEFAULT_MONGODB_URI, configureMongoDns, mongoConnectionError, resolveMo
 import { checkDB } from '../scripts/check-db.js';
 
 test('MongoDB URI preserves the configured database and trims only surrounding whitespace', () => {
+  assert.equal(resolveMongoUri({ MONGODB_URI: 'mongodb+srv://user:secret@cluster.example/?authSource=admin' }), 'mongodb+srv://user:secret@cluster.example/mainDB?authSource=admin');
+  assert.equal(resolveMongoUri({ MONGODB_URI: 'mongodb://host1:27017,host2:27017?replicaSet=rs' }), 'mongodb://host1:27017,host2:27017/mainDB?replicaSet=rs');
+  assert.equal(resolveMongoUri({ MONGODB_URI: 'mongodb://127.0.0.1:27017/isolated_test' }), 'mongodb://127.0.0.1:27017/isolated_test');
   for (const value of [undefined, '', '   ']) assert.equal(resolveMongoUri({ MONGODB_URI: value }), DEFAULT_MONGODB_URI);
   assert.equal(resolveMongoUri({ MONGODB_URI: '  mongodb+srv://user:secret@cluster.example/kept?authSource=admin  ' }), 'mongodb+srv://user:secret@cluster.example/kept?authSource=admin');
   assert.doesNotThrow(() => validateMongoUri(DEFAULT_MONGODB_URI));

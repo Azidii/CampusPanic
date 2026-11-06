@@ -2,6 +2,7 @@ import { Alert } from '../models/Alert.js';
 import { Node } from '../models/Node.js';
 import { describeAudio } from './espDevices.js';
 import { computeAlertChecksum } from '../utils/checksum.js';
+import { withIncidentWrite } from './incidentGuard.js';
 
 export const THREAT_KEYS = ['smoke', 'fire', 'medical', 'shooting'];
 export const emptyOutputs = () => ({ fire: false, medical: false, shooting: false });
@@ -77,7 +78,7 @@ export function validGunDetections(detections) {
 const pendingIncidents = new Map();
 export async function recordDetectionIncident(nodeId, key, emergencyType, triggerSource, confidence) {
   if (pendingIncidents.has(key)) return pendingIncidents.get(key);
-  const operation = (async () => {
+  const operation = withIncidentWrite(async () => {
     for (let attempt = 0; attempt < 4; attempt++) {
       const existing = await Alert.findOne({ deviceEventKey: key, status: { $ne: 'resolved' } });
       if (existing) return existing;
@@ -99,7 +100,7 @@ export async function recordDetectionIncident(nodeId, key, emergencyType, trigge
       } catch (error) { if (error.code !== 11000) throw error; }
     }
     throw new Error('Incident sequence busy; retry detection');
-  })();
+  });
   pendingIncidents.set(key, operation);
   try { return await operation; } finally { pendingIncidents.delete(key); }
 }

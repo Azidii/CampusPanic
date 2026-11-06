@@ -61,7 +61,7 @@ test('Audio streaming end-to-end integration and load testing', { timeout: 60000
     const testNode = await Node.create({
       nodeId: 'TEST-AUDIO-NODE-01',
       name: 'Security Gate Audio Test',
-      building: 'Building A',
+      building: 'RSY',
       room: '101',
       videoEnabled: true,
       pairingHash: hashCode(pairingCode),
@@ -134,7 +134,7 @@ test('Audio streaming end-to-end integration and load testing', { timeout: 60000
         await Node.create({
           nodeId: vId,
           name: `Virtual Node ${i}`,
-          building: 'Hall B',
+          building: 'RG Birrey',
           room: `20${i}`,
           videoEnabled: true,
           pairingHash: hashCode(vCode),

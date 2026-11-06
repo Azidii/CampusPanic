@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const alertSchema = new mongoose.Schema(
   {
+    clearedBy: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [], select: false },
     nodeId: {
       type: String,
       required: [true, 'nodeId is required'],

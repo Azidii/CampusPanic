@@ -1,4 +1,5 @@
 import express from 'express';
+import { alertCounts, dashboardFeed } from '../services/alertFeed.js';
 import { Alert } from '../models/Alert.js';
 import { Node } from '../models/Node.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -8,22 +9,21 @@ import { audioService } from '../services/audioService.js';
 const router = express.Router();
 router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const [documents, alerts, activeAlerts] = await Promise.all([
+    const [documents, alerts, activeAlerts, counts] = await Promise.all([
       Node.find().sort({ building: 1, room: 1 }),
-      Alert.find().sort({ priority: 1, timestamp: -1 }).limit(100),
-      Alert.find({ status: { $ne: 'resolved' } }).sort({ priority: 1, timestamp: -1 })
+      Alert.find({ status: 'resolved' }).sort({ timestamp: -1 }).limit(20),
+      Alert.find({ status: { $ne: 'resolved' } }).sort({ priority: 1, timestamp: -1 }),
+      alertCounts()
     ]);
     const nodes = await videoService.describe(documents);
-    const counts = Object.fromEntries(['gunshot', 'medical', 'fire', 'panic'].map(type =>
-      [type, alerts.filter(a => a.emergencyType === type).length]));
-    counts.unresolved = alerts.filter(a => a.status !== 'resolved').length;
-    counts.verifiedThreats = alerts.filter(a => a.threatStatus === 'verified_threat' && a.status !== 'resolved').length;
+    const dashboard = req.query.dashboard === 'true' ? await dashboardFeed(req.user._id, req.query) : undefined;
     res.set('Cache-Control', 'no-store').json({
       success: true,
       nodes,
       alerts,
       activeAlerts,
       counts,
+      dashboard,
       receiver: {
         ready: videoService.ready,
         message: videoService.message,

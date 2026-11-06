@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const nodeSchema = new mongoose.Schema(
   {
-    name: { type: String, trim: true, maxlength: 100, default: '' },
+    name: { type: String, trim: true, maxlength: 100, required: true },
+    nameKey: { type: String, select: false },
     videoEnabled: { type: Boolean, default: false },
     audioMuted: { type: Boolean, default: false },
     physicalSequence: { type: Number, default: 0 },
@@ -18,6 +19,7 @@ const nodeSchema = new mongoose.Schema(
     building: {
       type: String,
       required: [true, 'building is required'],
+      enum: ['RSY', 'RG Birrey'],
       trim: true
     },
     room: {
@@ -56,5 +58,6 @@ const nodeSchema = new mongoose.Schema(
 nodeSchema.index({ building: 1, room: 1 });
 nodeSchema.index({ status: 1 });
 nodeSchema.index({ pairingHash: 1 }, { unique: true, sparse: true });
+nodeSchema.pre('validate', function () { if (typeof this.name === 'string') this.nameKey = this.name.trim().toLowerCase(); });
 
 export const Node = mongoose.model('Node', nodeSchema);

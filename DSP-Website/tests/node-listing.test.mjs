@@ -22,10 +22,10 @@ test('saved offline and legacy nodes remain visible without camera/model session
     const { videoService } = await import('../services/videoService.js');
     await Node.init();
     await Node.create([
-      { nodeId: 'NODE-UNPAIRED', name: 'Unused library node', building: 'Library', room: 'Entrance',
+      { nodeId: 'NODE-UNPAIRED', name: 'Unused library node', building: 'RSY', room: 'Entrance',
         videoEnabled: true, status: 'offline', lat: 14.5, lng: 120.9,
         pairingHash: 'test-only-hidden-pairing-hash', pairingExpiresAt: new Date(0) },
-      { nodeId: 'NODE-SENSOR', name: 'Unpaired sensor node', building: 'Engineering', room: 'Lab',
+      { nodeId: 'NODE-SENSOR', name: 'Unpaired sensor node', building: 'RG Birrey', room: 'Lab',
         videoEnabled: false, status: 'offline', lat: null, lng: null }
     ]);
     // Old saved nodes predate name/videoEnabled and may never have had a Camera.
@@ -57,7 +57,7 @@ test('saved offline and legacy nodes remain visible without camera/model session
         const legacy = data.nodes.find(node => node.nodeId === 'NODE-LEGACY');
         assert.equal(legacy.videoEnabled, false);
       }
-      const response = await request('/api/nodes?building=Library');
+      const response = await request('/api/nodes?building=RSY');
       const data = await response.json();
       assert.deepEqual(data.nodes.map(node => node.nodeId), ['NODE-UNPAIRED']);
     });

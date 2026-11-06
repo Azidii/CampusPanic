@@ -1,6 +1,6 @@
 <header class="top-nav">
   <div class="nav-left">
-    <button class="nav-mobile-toggle" id="mobileNavToggle" aria-label="Open menu">&#9776;</button>
+    <button class="nav-mobile-toggle" id="mobileNavToggle" aria-label="Open menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
 
     <!-- Plain page title instead of the old jargon breadcrumb -->
     <div class="page-title-bar" role="heading" aria-level="2">
@@ -26,11 +26,15 @@
   </div>
 
   <div class="nav-right">
+    <div class="notification-wrap">
+      <button id="notificationToggle" class="btn btn-outline btn-sm" aria-expanded="false" aria-controls="notificationPanel">Notifications <span id="notificationCount" hidden>0</span></button>
+      <div id="notificationPanel" class="notification-panel" hidden><div id="notificationPreview"></div><a href="/notifications">All campus notifications →</a></div>
+    </div>
     <div class="soc-live-clock-pod" title="Local time">
       <span class="soc-live-clock font-mono" id="liveClock">--:--:--</span>
     </div>
 
-    <button class="hardware-siren-btn" id="quickAlarmToggleBtn" title="Play the alarm sound once to check your speakers" onclick="if(window.alarmSound) window.alarmSound.playAlarm(2000);">
+    <button class="hardware-siren-btn" id="quickAlarmToggleBtn" title="Play the alarm sound once to check your speakers">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
         <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>

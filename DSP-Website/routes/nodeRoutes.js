@@ -6,6 +6,7 @@ import { requireAuth, requireAdmin } from '../middleware/auth.js';
 import { videoService } from '../services/videoService.js';
 import { issuePairing } from '../services/nodePairing.js';
 import { EspDevice } from '../models/EspDevice.js';
+import { BUILDINGS, buildingFilter } from '../services/alertFeed.js';
 
 const router = express.Router();
 router.use(requireAuth, (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
@@ -20,6 +21,7 @@ function details(body) {
     result[key] = body[key].trim();
   }
   const hasLat = body.lat !== undefined && body.lat !== null && body.lat !== '';
+  if (!BUILDINGS.includes(result.building)) throw Object.assign(new Error('Building must be RSY or RG Birrey.'), { statusCode: 400 });
   const hasLng = body.lng !== undefined && body.lng !== null && body.lng !== '';
   if (hasLat !== hasLng) throw Object.assign(new Error('Provide both latitude and longitude, or leave both blank'), { statusCode: 400 });
   result.lat = hasLat ? Number(body.lat) : null;

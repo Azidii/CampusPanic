@@ -6,7 +6,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
+import mongoose from 'mongoose';
 
+import { sameOrigin } from './middleware/browserSecurity.js';
+import { requireAuth } from './middleware/auth.js';
 import { config } from './config/config.js';
 import { connectDB } from './config/db.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -42,7 +45,13 @@ app.set('views', path.resolve(__dirname, 'views'));
 // Security Headers (configured to allow inline styles/Leaflet/scripts/CDNs)
 app.use(
   helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: { directives: {
+      scriptSrc: ["'self'", 'https://unpkg.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://unpkg.com'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https://*.basemaps.cartocdn.com', 'https://unpkg.com'],
+      connectSrc: ["'self'"], upgradeInsecureRequests: null
+    } },
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     crossOriginEmbedderPolicy: false
   })
@@ -50,7 +59,7 @@ app.use(
 
 app.use(
   cors({
-    origin: true,
+    origin(origin, callback) { callback(null, !origin || origin === new URL(config.clientUrl).origin); },
     credentials: true
   })
 );
@@ -69,17 +78,20 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 app.use('/css', express.static(path.resolve(__dirname, 'css')));
 app.use('/js', express.static(path.resolve(__dirname, 'js')));
 app.use('/public', express.static(path.resolve(__dirname, 'public')));
-app.use('/uploads', express.static(path.resolve(__dirname, 'uploads')));
+app.use('/uploads', requireAuth, (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); }, express.static(path.resolve(__dirname, 'uploads')));
 
 // General API Rate Limiter
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 1000,
+  skip: req => req.method === 'GET' && ['/live', '/nodes', '/alerts', '/esp32/available', '/cameras', '/health'].includes(req.path),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests, please try again later.' }
 });
 app.use('/api/', generalLimiter);
+app.use('/api/', sameOrigin);
+app.use('/api/auth/login', rateLimit({ windowMs: 15 * 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false }));
 
 // API Health Check
 app.get('/api/health', (req, res) => {
@@ -88,6 +100,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     service: 'CampusPanic Alert Security Gateway',
     environment: config.env,
+    database: mongoose.connection.name || null,
     workers: {
       video: { ready: videoService.ready, message: videoService.message },
       audio: { ready: audioService.ready, message: audioService.message }

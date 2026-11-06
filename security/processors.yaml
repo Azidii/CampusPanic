@@ -1,0 +1,9 @@
+processors:
+  - name: MongoDB
+    deployment: Local MongoDB by default; Atlas only when configured by the operator.
+    data: Account, node and incident records
+  - name: Local Python model workers
+    deployment: Loopback-only worker services
+    data: Transient camera frames and audio chunks
+external_browser_services: []
+notes: Fonts are self-hosted. Hosting, backups and optional Atlas access require operator review before public deployment.
