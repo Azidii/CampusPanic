@@ -52,7 +52,7 @@ TINYML_INT8_PATH  = TINYML_DIR / "audio_cnn_int8.tflite"
 
 
 # ── DSP PREPROCESSING FUNCTIONS ────────────────────────────────────────────────
-def compute_signal_envelope(y: np.ndarray, rate: int = 16000, threshold: float = 0.005):
+def compute_signal_envelope(y: np.ndarray, rate: int = 16000, threshold: float = 0.02):
     """
     Computes signal envelope using a rolling maximum filter
     (50ms window) to identify acoustic activity and remove dead silence.
@@ -64,12 +64,26 @@ def compute_signal_envelope(y: np.ndarray, rate: int = 16000, threshold: float =
     return mask, y_env
 
 
+def normalize_audio(audio: np.ndarray, target_peak: float = 0.95, min_noise_floor: float = 0.02) -> np.ndarray:
+    """
+    Peak-normalizes the audio waveform to `target_peak` if it exceeds `min_noise_floor`.
+    Prevents the CNN from relying on raw recording volume to detect gunshots.
+    Avoids scaling up low-level ambient room hiss or silence.
+    """
+    if len(audio) == 0:
+        return audio
+    max_peak = float(np.max(np.abs(audio)))
+    if max_peak >= min_noise_floor:
+        return (audio / max_peak) * target_peak
+    return audio
+
+
 def preprocess_audio_buffer(audio: np.ndarray, sr: int = 16000, target_sr: int = 16000,
                             duration: float = 1.0, clean_silence: bool = True,
-                            threshold: float = 0.005) -> np.ndarray:
+                            threshold: float = 0.02, normalize: bool = True) -> np.ndarray:
     """
     Standardizes a raw numpy audio array to 16 kHz mono, removes dead silence,
-    and pads or truncates to exact fixed duration.
+    pads or truncates to exact fixed duration, and peak-normalizes energy.
     """
     # 1. Ensure float32 and mono
     audio = audio.astype(np.float32)
@@ -97,6 +111,10 @@ def preprocess_audio_buffer(audio: np.ndarray, sr: int = 16000, target_sr: int =
     elif len(audio) < required_samples:
         pad_width = required_samples - len(audio)
         audio = np.pad(audio, (0, pad_width), mode='constant')
+
+    # 5. Peak normalization
+    if normalize:
+        audio = normalize_audio(audio, target_peak=0.95, min_noise_floor=threshold)
 
     return audio
 
@@ -242,11 +260,13 @@ class UnifiedModelTester:
       3. TinyML Model (Full INT8 .tflite)
     """
     def __init__(self, keras_path=BEST_KERAS_PATH, tflite_path=TFLITE_QUANT_PATH,
-                 tinyml_path=TINYML_INT8_PATH, classes_path=CLASSES_PATH):
+                 tinyml_path=TINYML_INT8_PATH, classes_path=CLASSES_PATH,
+                 confidence_threshold: float = 0.70):
         self.keras_path   = Path(keras_path)
         self.tflite_path  = Path(tflite_path)
         self.tinyml_path  = Path(tinyml_path)
         self.classes_path = Path(classes_path)
+        self.confidence_threshold = float(confidence_threshold)
 
         # Load classes
         if not self.classes_path.exists():
@@ -292,26 +312,42 @@ class UnifiedModelTester:
         self.load_tflite()
         self.load_tinyml()
 
+    def _package_prediction(self, model_type: str, model_file: str, fmt: str,
+                            size_mb: float, preds: np.ndarray, latency_ms: float) -> dict:
+        top_idx = int(np.argmax(preds))
+        predicted_label = self.classes[top_idx]
+        confidence = float(preds[top_idx])
+        is_confident = confidence >= self.confidence_threshold
+        status_label = predicted_label if is_confident else f"Uncertain ({predicted_label}?)"
+        is_alert = (predicted_label in ["Gunshot", "Scream"]) and is_confident
+
+        return {
+            "model_type": model_type,
+            "model_file": model_file,
+            "format": fmt,
+            "size_mb": size_mb,
+            "predicted_label": predicted_label,
+            "confidence": confidence,
+            "confidence_threshold": self.confidence_threshold,
+            "is_confident": is_confident,
+            "status_label": status_label,
+            "alert": is_alert,
+            "latency_ms": latency_ms,
+            "probabilities": {cls_name: float(p) for cls_name, p in zip(self.classes, preds)}
+        }
+
     # 1. Best Model (Keras) Inference
     def predict_keras(self, input_tensor: np.ndarray) -> dict:
         model = self.load_keras()
         t0 = time.perf_counter()
         preds = model.predict(input_tensor, verbose=0)[0]
         latency_ms = (time.perf_counter() - t0) * 1000
-
-        top_idx = int(np.argmax(preds))
         size_mb = os.path.getsize(self.keras_path) / (1024**2)
 
-        return {
-            "model_type": "Best Model (Keras)",
-            "model_file": self.keras_path.name,
-            "format": "Keras (.keras, Float32)",
-            "size_mb": size_mb,
-            "predicted_label": self.classes[top_idx],
-            "confidence": float(preds[top_idx]),
-            "latency_ms": latency_ms,
-            "probabilities": {cls_name: float(p) for cls_name, p in zip(self.classes, preds)}
-        }
+        return self._package_prediction(
+            "Best Model (Keras)", self.keras_path.name,
+            "Keras (.keras, Float32)", size_mb, preds, latency_ms
+        )
 
     # 2. TFLite Model Inference
     def predict_tflite(self, input_tensor: np.ndarray) -> dict:
@@ -323,19 +359,12 @@ class UnifiedModelTester:
         latency_ms = (time.perf_counter() - t0) * 1000
 
         preds = interp.get_tensor(self.tflite_out["index"])[0]
-        top_idx = int(np.argmax(preds))
         size_mb = os.path.getsize(self.tflite_path) / (1024**2)
 
-        return {
-            "model_type": "TFLite Model",
-            "model_file": self.tflite_path.name,
-            "format": "TFLite (Dynamic INT8 / FP32)",
-            "size_mb": size_mb,
-            "predicted_label": self.classes[top_idx],
-            "confidence": float(preds[top_idx]),
-            "latency_ms": latency_ms,
-            "probabilities": {cls_name: float(p) for cls_name, p in zip(self.classes, preds)}
-        }
+        return self._package_prediction(
+            "TFLite Model", self.tflite_path.name,
+            "TFLite (Dynamic INT8 / FP32)", size_mb, preds, latency_ms
+        )
 
     # 3. TinyML Full INT8 Inference
     def predict_tinyml(self, input_tensor: np.ndarray) -> dict:
@@ -353,20 +382,12 @@ class UnifiedModelTester:
         dequant = (raw_out.astype(np.float32) - out_zp) * out_scale
         total_p = np.sum(dequant)
         probs = (dequant / total_p) if total_p > 0 else dequant
-
-        top_idx = int(np.argmax(probs))
         size_mb = os.path.getsize(self.tinyml_path) / (1024**2)
 
-        return {
-            "model_type": "TinyML (Full INT8)",
-            "model_file": self.tinyml_path.name,
-            "format": "TFLite Micro (INT8 In/Out)",
-            "size_mb": size_mb,
-            "predicted_label": self.classes[top_idx],
-            "confidence": float(probs[top_idx]),
-            "latency_ms": latency_ms,
-            "probabilities": {cls_name: float(p) for cls_name, p in zip(self.classes, probs)}
-        }
+        return self._package_prediction(
+            "TinyML (Full INT8)", self.tinyml_path.name,
+            "TFLite Micro (INT8 In/Out)", size_mb, probs, latency_ms
+        )
 
     # Run all three
     def predict_all(self, audio_source, clean_silence: bool = True) -> dict:
@@ -380,11 +401,14 @@ class UnifiedModelTester:
         all_agree = (predictions[0] == predictions[1] == predictions[2])
 
         source_name = Path(audio_source).name if isinstance(audio_source, (str, Path)) else "Microphone Live Input"
+        confirmed_alert = any(res.get("alert", False) for res in [k_res, tf_res, tiny_res])
 
         return {
             "source": source_name,
             "all_agree": all_agree,
             "consensus": predictions[0] if all_agree else "Divergent",
+            "alert": confirmed_alert,
+            "confidence_threshold": self.confidence_threshold,
             "models": {
                 "keras": k_res,
                 "tflite": tf_res,
@@ -404,21 +428,23 @@ def format_results_table(results: dict, classes: list = None) -> str:
 
     source_name = results.get("source", "Audio")
     models = results["models"]
+    conf_thresh = results.get("confidence_threshold", 0.70)
 
     lines = []
-    lines.append("\n" + "=" * 78)
+    lines.append("\n" + "=" * 82)
     lines.append(f"   AUDIO CNN INFERENCE BENCHMARK: {source_name}")
-    lines.append("=" * 78)
+    lines.append("=" * 82)
 
     # Header
-    col_w = [25, 23, 10, 14, 10, 11]
+    col_w = [23, 23, 9, 13, 8, 8, 10]
     header = (
         f"{'Model':<{col_w[0]}} | "
         f"{'Format':<{col_w[1]}} | "
         f"{'Size':<{col_w[2]}} | "
         f"{'Predicted':<{col_w[3]}} | "
         f"{'Conf.':<{col_w[4]}} | "
-        f"{'Latency':<{col_w[5]}}"
+        f"{'Alert?':<{col_w[5]}} | "
+        f"{'Latency':<{col_w[6]}}"
     )
     separator = "-" * len(header)
     lines.append(header)
@@ -428,20 +454,23 @@ def format_results_table(results: dict, classes: list = None) -> str:
         m = models[m_key]
         size_str = f"{m['size_mb']:.1f} MB"
         conf_str = f"{m['confidence']*100:.1f}%"
+        alert_str = "YES [!]" if m.get("alert", False) else "NO [-]"
         lat_str  = f"{m['latency_ms']:.2f} ms"
+        pred_display = m['predicted_label'] if m.get("is_confident", True) else f"{m['predicted_label']} (?)"
         row = (
             f"{m['model_type']:<{col_w[0]}} | "
             f"{m['format']:<{col_w[1]}} | "
             f"{size_str:<{col_w[2]}} | "
-            f"{m['predicted_label']:<{col_w[3]}} | "
+            f"{pred_display:<{col_w[3]}} | "
             f"{conf_str:<{col_w[4]}} | "
-            f"{lat_str:<{col_w[5]}}"
+            f"{alert_str:<{col_w[5]}} | "
+            f"{lat_str:<{col_w[6]}}"
         )
         lines.append(row)
 
     lines.append(separator)
 
-    # Consensus Status
+    # Consensus Status & Alert Status
     if results["all_agree"]:
         lines.append(f"  --> CONSENSUS: [MATCH] All 3 models agree on -> {results['consensus'].upper()} <--")
     else:
@@ -449,6 +478,11 @@ def format_results_table(results: dict, classes: list = None) -> str:
         tf_p = models["tflite"]["predicted_label"]
         ti_p = models["tinyml"]["predicted_label"]
         lines.append(f"  --> NOTICE: [DIVERGENCE] Keras: {k_p} | TFLite: {tf_p} | TinyML: {ti_p} <--")
+
+    if not results.get("alert", False):
+        lines.append(f"  --> STATUS: NORMAL / NO VERIFIED THREAT (Confidence threshold: {conf_thresh*100:.0f}%)")
+    else:
+        lines.append(f"  --> STATUS: [ALERT TRIGGERED] High-confidence threat verified!")
 
     lines.append("-" * len(header))
     lines.append("  Detailed Class Probabilities:")

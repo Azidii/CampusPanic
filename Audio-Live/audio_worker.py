@@ -29,7 +29,7 @@ def utc_now():
 
 
 class AudioPipeline:
-    def __init__(self, model_path, classes_path, threshold=0.55, max_nodes=16):
+    def __init__(self, model_path, classes_path, threshold=0.70, max_nodes=16):
         self.threshold = threshold
         self.max_nodes = max_nodes
         self.lock = threading.Lock()
@@ -112,7 +112,7 @@ class AudioPipeline:
             s = pd.Series(np.abs(audio))
             window_size = max(int(self.sample_rate / 20), 1)  # 50ms window
             y_env = s.rolling(window=window_size, min_periods=1, center=True).max().to_numpy()
-            mask = y_env > 0.005
+            mask = y_env > 0.02
             active = audio[mask]
             if len(active) >= int(self.sample_rate * 0.1):  # at least 100ms
                 audio = active
@@ -124,6 +124,11 @@ class AudioPipeline:
         elif len(audio) < target_len:
             pad_width = target_len - len(audio)
             audio = np.pad(audio, (0, pad_width), mode='constant')
+
+        # Peak normalization to prevent loud ambient noises from falsely triggering gunshot alarms
+        max_peak = float(np.max(np.abs(audio))) if len(audio) > 0 else 0.0
+        if max_peak >= 0.02:
+            audio = (audio / max_peak) * 0.95
 
         return audio
 
