@@ -3,9 +3,11 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!element || typeof L === 'undefined') return;
   const map = L.map(element);
   map.fitWorld();
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  const tileUrl = () => 'https://{s}.basemaps.cartocdn.com/' + (document.documentElement.dataset.theme === 'light' ? 'light_all' : 'dark_all') + '/{z}/{x}/{y}{r}.png';
+  const tiles = L.tileLayer(tileUrl(), {
     attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd', maxZoom: 20
   }).addTo(map);
+  new MutationObserver(() => tiles.setUrl(tileUrl())).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
   const group = L.featureGroup().addTo(map);
   let fitted = false;
   let seen = null;
@@ -43,8 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const node = byNode.get(nodeId);
       const incidents = unresolved.filter(alert => alert.nodeId === nodeId);
       const first = incidents[0];
+      const fire = incidents.some(alert => alert.emergencyType === 'fire') || node?.hud?.threats?.fire || node?.hud?.threats?.smoke;
+      const emergency = fire ? 'fire' : incidents.some(alert => alert.emergencyType === 'gunshot') || node?.hud?.threats?.shooting ? 'gunshot' : incidents.some(alert => alert.emergencyType === 'panic') ? 'panic' : 'medical';
       const card = document.createElement('div');
       card.className = 'threat-hotspot-card';
+      card.dataset.emergency = emergency;
       const heading = document.createElement('strong');
       heading.textContent = incidents.length ? [...new Set(incidents.map(label))].join(' / ') : Object.entries(node?.hud?.threats || {}).filter(([, value]) => value === true).map(([key]) => key.toUpperCase()).join(' / ') || 'HARDWARE ALERT';
       const location = document.createElement('p');
@@ -64,8 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         card.append(note);
         continue;
       }
-      const fire = incidents.some(alert => alert.emergencyType === 'fire') || node.hud?.threats?.fire;
-      const kind = fire ? 'pin-fire' : incidents.some(alert => alert.emergencyType === 'gunshot') || node.hud?.threats?.shooting ? 'pin-gunshot-verified' : 'pin-medical';
+      const kind = 'pin-' + (emergency === 'gunshot' ? 'gunshot-verified' : emergency);
       const marker = L.marker([node.lat, node.lng], { icon: L.divIcon({
         className: `threat-pulse-pin ${kind}`, iconSize: [24, 24], iconAnchor: [12, 12]
       }) }).addTo(group);

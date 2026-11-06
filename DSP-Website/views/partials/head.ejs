@@ -7,13 +7,8 @@
   <meta name="description" content="CampusPanic is a real-time campus emergency operations center integrating acoustic detection, computer vision firearm verification, node status telemetry, and interactive maps.">
   <link rel="icon" type="image/svg+xml" href="/public/favicon.svg">
 
-  <!-- Google Fonts: Inter & JetBrains Mono -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
-
   <!-- Leaflet Map Styles (if map view) -->
-  <% if (page === 'map-view' || page === 'active-nodes-map') { %>
+  <% if (page === 'active-nodes-map') { %>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <% } %>
 
@@ -27,7 +22,9 @@
   <% } %>
   <!-- Dedicated Page-Specific CSS -->
   <% if (page) { %>
-    <link rel="stylesheet" href="/css/<%= page %>.css">
+    <link rel="stylesheet" href="/css/<%= page === 'error' ? '404' : page %>.css">
   <% } %>
 </head>
 <body class="page-<%= page %>">
+
+<% if (page !== 'login') { %><a class="skip-link" href="#<%= page === 'security-nodes' ? 'securityNodePage' : page === 'cam-view' ? 'singleNodePage' : page === 'all-cams' ? 'cctvPage' : 'mainContent' %>">Skip to content</a><% } %>

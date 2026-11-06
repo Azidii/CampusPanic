@@ -3,7 +3,7 @@
   <%- include('partials/sidebar') %>
   <div class="main-content">
     <%- include('partials/navbar') %>
-    <main class="page-body" id="singleNodePage" data-node-id="<%= selectedNode ? selectedNode.nodeId : '' %>">
+    <main class="page-body" tabindex="-1" id="singleNodePage" data-node-id="<%= selectedNode ? selectedNode.nodeId : '' %>">
       <%- include('partials/tabs', { group: 'cameras' }) %>
       <div class="nodes-heading"><div><h1>Incident review</h1><p>Check one camera and look back at saved incident snapshots.</p></div></div>
       <div id="receiverStatus" class="receiver-status" role="status">Checking model service…</div>

@@ -3,7 +3,7 @@
   <%- include('partials/sidebar') %>
   <div class="main-content">
     <%- include('partials/navbar') %>
-    <main class="page-body" id="securityNodePage" data-admin="<%= user.role === 'admin' %>">
+    <main class="page-body" tabindex="-1" id="securityNodePage" data-admin="<%= user.role === 'admin' %>">
       <!-- 1. Page Header with Right-Aligned CCTV CTA -->
       <div class="nodes-heading">
         <div>
@@ -18,7 +18,7 @@
 
       <!-- Setup steps -->
       <ol class="setup-steps" aria-label="How to connect a device">
-        <li><strong>Add a location</strong><span>Name, building and room. Use the form on the right.</span></li>
+        <li><strong>Add a location</strong><span>Enter a name, then choose the building, floor and room.</span></li>
         <li><strong>Connect the phone camera</strong><span>Enter the 8-digit code in the Campus Panic Camera app.</span></li>
         <li><strong>Connect the ESP32</strong><span>Open the location below, then <em>Audio · ESP32 → Scan</em> and enter the PIN shown on the board.</span></li>
       </ol>

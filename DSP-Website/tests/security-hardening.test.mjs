@@ -37,7 +37,7 @@ test('browser security and node permissions with admin, operator and anonymous i
     });
     let id;
     await t.test('only administrators create, edit and delete; operators and anonymous clients cannot mutate',async()=>{
-      const body={name:'Library',building:'RSY',room:'Entrance'};
+      const body={name:'Library',building:'RSY',floor:'1',room:'C101'};
       assert.equal((await request('/api/nodes',{method:'POST',body})).status,401);
       assert.equal((await request('/api/nodes',{role:'user',method:'POST',body})).status,403);
       const created=await request('/api/nodes',{role:'admin',method:'POST',body,headers:{Origin:base}});
@@ -63,7 +63,7 @@ test('browser security and node permissions with admin, operator and anonymous i
     });
     await t.test('maps remain functional, node deep links retain the affected node and removed nodes never fall back to another camera',async()=>{
       for(const route of ['/map','/active-nodes-map','/active-threats-map']) {
-        const response=await request(route,{role:'admin'});assert.equal(response.status,200);assert.match(await response.text(),/buildingFilter/);
+        const response=await request(route,{role:'admin'});assert.equal(response.status,200);assert.match(await response.text(),route === '/map' ? /mapBuildingPanel/ : /buildingFilter/);
       }
       for(const route of ['/','/security-nodes','/cameras','/notifications','/profile','/settings','/admin/users','/cam-view?nodeId='+id]) {
         const response=await request(route,{role:'admin'}); assert.equal(response.status,200,route);

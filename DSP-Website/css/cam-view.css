@@ -16,12 +16,12 @@
 }
 
 .viewport-container {
-  background-color: #060911;
+  background-color: var(--bg-recessed);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   overflow: hidden;
   position: relative;
-  box-shadow: var(--shadow-card);
+  box-shadow:none;
 }
 
 .video-frame-wrapper {
@@ -64,7 +64,7 @@
   border: 1px solid var(--border-subtle);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 0.76rem;
+  font-size:0.8125rem;
   z-index: 10;
 }
 
@@ -72,10 +72,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #fca5a5;
+  color: var(--threat-verified);
   font-weight: 700;
-  text-transform: uppercase;
-  font-size: 0.72rem;
+  text-transform:none;
+  font-size:0.8125rem;
 }
 
 .rec-blink-dot {
@@ -83,7 +83,7 @@
   height: 8px;
   background-color: var(--threat-verified);
   border-radius: 50%;
-  box-shadow: 0 0 6px var(--threat-verified);
+  box-shadow:none;
   animation: blinkRec 1s infinite;
 }
 
@@ -99,7 +99,7 @@
   border-radius: var(--radius-xs);
   padding: 10px 14px;
   margin: 14px 0;
-  color: #fed7aa;
+  color: var(--threat-unverified);
   font-size: 0.84rem;
   display: flex;
   align-items: center;
@@ -122,10 +122,10 @@
 }
 
 .confidence-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
+  font-size:0.8125rem;
+  text-transform:none;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing:normal;
   color: var(--text-muted);
   margin-bottom: 6px;
   font-family: var(--font-mono);
@@ -154,12 +154,12 @@
 }
 
 .meter-fill.audio {
-  background-color: #0284c7;
+  background-color: var(--accent);
 }
 
 .meter-number {
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight:600;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);

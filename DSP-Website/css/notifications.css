@@ -2,8 +2,15 @@
 .nodes-heading p { color:var(--text-secondary); margin-top:8px; }
 
 .notification-wrap { position:relative; }
-.notification-panel { position:absolute; right:0; top:calc(100% + 8px); z-index:120; width:min(380px,calc(100vw - 32px)); max-height:70vh; overflow:auto; padding:16px; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); background:var(--bg-surface); box-shadow:0 12px 32px rgba(0,0,0,.25); }
+.notification-panel { position:absolute; right:0; top:calc(100% + 8px); z-index:120; width:min(380px,calc(100vw - 32px)); max-height:70vh; overflow:auto; padding:16px; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); background:var(--bg-surface); box-shadow:none; }
 .notification-row { display:flex; flex-direction:column; gap:6px; padding:12px 0; border-bottom:1px solid var(--border-subtle); overflow-wrap:anywhere; }
 .notification-row span,.notification-row small { color:var(--text-secondary); }
 .notification-list { max-width:900px; }
 @media(max-width:640px) { .notification-panel { position:fixed; top:72px; right:16px; } .notification-wrap button { font-size:12px; padding:8px; } }
+
+.notification-list { max-width:100%; display:grid; gap:12px; }
+.notification-list .notification-row { padding:18px 20px; background:var(--bg-surface); border:0; border-left:4px solid var(--incident); border-radius:6px; box-shadow:var(--shadow-card); }
+.notification-row strong { color:var(--incident); }
+.notification-row:hover { background:var(--bg-surface-hover); }
+.notification-panel .notification-row { padding-left:12px; border-left:3px solid var(--incident); margin-top:8px; }
+.notification-list .notification-row[data-status=resolved] { background:var(--bg-recessed); box-shadow:none; }

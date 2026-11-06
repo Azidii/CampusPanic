@@ -71,18 +71,43 @@ test('saved offline and legacy nodes remain visible without camera/model session
         if (route.startsWith('/cam-view')) assert.match(html, /data-node-id="NODE-LEGACY"/);
       }
       const map = await (await request('/map')).text();
-      const payload = map.match(/<script id="nodesData" type="application\/json">([\s\S]*?)<\/script>/);
-      assert.ok(payload, 'map includes its initial node data');
-      const nodes = JSON.parse(payload[1]);
-      assert.deepEqual(nodes.map(node => node.nodeId).sort(), expectedIds);
-      assert.equal(nodes.find(node => node.nodeId === 'NODE-UNPAIRED').lat, 14.5);
+      assert.match(map, /id="mapDiagrams"/);
+      assert.match(map, /\/js\/map-data\.js/);
+      assert.doesNotMatch(map, /unpkg.com\/leaflet|id="nodesData"/);
+      assert.equal((await Node.findOne({nodeId:'NODE-UNPAIRED'})).lat, 14.5);
     });
 
     await t.test('list access stays authenticated and reading never recreates camera records', async () => {
       for (const route of ['/api/nodes', '/api/live']) assert.equal((await request(route, false)).status, 401);
       assert.equal((await request('/cameras', false)).status, 302);
+      assert.equal((await request('/map', false)).status, 302);
       assert.equal(await Camera.countDocuments(), 0);
       assert.equal(await Node.countDocuments(), expectedIds.length);
+    });
+
+    await t.test('live map receives every open incident and resolution uses the existing authenticated lifecycle', async () => {
+      const { Alert } = await import('../models/Alert.js');
+      const { readFile } = await import('node:fs/promises');
+      const vm = await import('node:vm');
+      const context = vm.createContext({ URLSearchParams });
+      vm.runInContext(await readFile(new URL('../js/map-data.js',import.meta.url),'utf8'),context);
+      const records = await Alert.create(Array.from({length:108},(_,i)=>({nodeId:'NODE-UNPAIRED',building:'RSY',room:'C101',
+        emergencyType:i%2?'fire':'medical',threatStatus:'manual_alert',sequenceNumber:i+1,checksum:'isolated-map-test',
+        timestamp:new Date('2025-01-01T00:00:00Z'),status:i<105?'resolved':i===105?'acknowledged':'new'})));
+      let live = await (await request('/api/live')).json();
+      assert.equal(live.activeAlerts.length,3);
+      let projection = context.CampusMap.project(live.nodes,live.activeAlerts);
+      assert.equal(projection.rooms.get('rsy/1/c101').alerts.length,3);
+      assert.equal(context.CampusMap.connection(live.nodes.find(n=>n.nodeId==='NODE-UNPAIRED')),'offline');
+      for (const alert of records.slice(105)) {
+        const response = await fetch(`${base}/api/alerts/${alert._id}`,{method:'PATCH',
+          headers:{Cookie:`token=${token}`,'Content-Type':'application/json'},body:JSON.stringify({action:'resolve'})});
+        assert.equal(response.status,200);
+      }
+      live = await (await request('/api/live')).json();
+      projection = context.CampusMap.project(live.nodes,live.activeAlerts);
+      assert.equal(projection.rooms.get('rsy/1/c101').alerts.length,0);
+      assert.equal(projection.buildingCounts.get('rsy'),0);
     });
   } finally {
     if (server?.listening) await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });

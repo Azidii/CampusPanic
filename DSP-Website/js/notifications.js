@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!rows.length) { const p = document.createElement('p'); p.className = 'notification-empty'; p.textContent = empty; container.append(p); return; }
     for (const alert of rows) {
       const link = document.createElement('a');
-      link.className = 'notification-row'; link.dataset.status = alert.status;
+      link.className = 'notification-row'; link.dataset.status = alert.status; link.dataset.emergency = alert.emergencyType;
       link.href = '/cam-view?' + new URLSearchParams({nodeId: alert.nodeId, alertId: alert._id});
       const heading = document.createElement('strong'); heading.textContent = alert.emergencyType.charAt(0).toUpperCase() + alert.emergencyType.slice(1) + ' · ' + alert.room;
       const location = document.createElement('span'); location.textContent = alert.building + ' · ' + alert.nodeId;

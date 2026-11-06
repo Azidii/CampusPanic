@@ -1,53 +1,41 @@
 <%- include('partials/head') %>
-
 <div class="app-container">
   <%- include('partials/sidebar') %>
-
   <div class="main-content">
     <%- include('partials/navbar') %>
-
-    <main class="page-body">
+    <main class="page-body campus-map" id="mainContent" tabindex="-1">
       <%- include('partials/tabs', { group: 'map' }) %>
-      <%- include('partials/building-filter') %>
-      <p id="mapLocationStatus" role="status"></p>
-      <div class="map-header-bar">
-        <div>
-          <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Campus map</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Where every device is on campus. Colors show whether it is online, offline or in an emergency.</p>
+      <header class="map-heading"><div><h1>Campus map</h1><p>Rooms, connected nodes and active emergencies. Select a room or node for details.</p></div></header>
+      <div class="map-toolbar">
+        <div role="tablist" aria-label="Building" class="map-building-tabs">
+          <button type="button" role="tab" id="mapBirreyTab" data-building="rg-birrey" aria-controls="mapBuildingPanel" aria-selected="true">RG Birrey <span class="map-alert-badge" hidden></span></button>
+          <button type="button" role="tab" id="mapRsyTab" data-building="rsy" aria-controls="mapBuildingPanel" aria-selected="false" tabindex="-1">RSY <span class="map-alert-badge" hidden></span></button>
         </div>
-
+        <label class="map-view-select" for="mapFloor">View <select id="mapFloor" class="form-select"><option value="all">Entire building</option></select></label>
       </div>
-
-      <div class="map-container-wrapper">
-        <div class="map-floating-overlay">
-          <div class="map-legend-title">Node Status Legend</div>
-          <div class="legend-items">
-            <div class="legend-chip">
-              <div class="legend-dot online"></div>
-              <span>Online (<%= nodes.filter(n => n.status === 'online').length %>)</span>
-            </div>
-            <div class="legend-chip">
-              <div class="legend-dot active"></div>
-              <span>Active Threat (<%= nodes.filter(n => n.status === 'active').length %>)</span>
-            </div>
-            <div class="legend-chip">
-              <div class="legend-dot offline"></div>
-              <span>Offline (<%= nodes.filter(n => n.status === 'offline').length %>)</span>
-            </div>
-          </div>
-        </div>
-
-        <div id="campusMap"></div>
+      <div class="map-update"><p id="mapSummary">Waiting for node and incident data…</p><p id="mapFreshness" role="status">Loading live status…</p></div>
+      <div id="mapError" class="map-error" role="status" hidden>Live data could not be loaded. Existing emergency indicators are retained. <button type="button" class="btn" id="mapRetry">Retry</button></div>
+      <p id="mapEmpty" class="map-notice" hidden>No nodes have been registered. Room diagrams and any active alerts are still shown.</p>
+      <div class="map-workspace">
+        <div id="mapBuildingPanel" role="tabpanel" aria-labelledby="mapBirreyTab"><div id="mapDiagrams"></div></div>
+        <aside id="mapDetail" class="map-detail" aria-labelledby="mapDetailTitle" hidden>
+          <div class="map-detail-heading"><h2 id="mapDetailTitle" tabindex="-1">Details</h2><button type="button" class="btn" id="mapDetailClose" aria-label="Close details">Close</button></div>
+          <dl id="mapDetailFields"></dl>
+          <h3 id="mapDetailCount">Active alerts</h3><ul id="mapDetailAlerts"></ul><p id="mapDetailNoAlerts">No active emergencies.</p>
+          <a class="btn btn-primary" id="mapLiveFeed" aria-describedby="mapFeedReason" hidden>View live feed</a><p id="mapFeedReason"></p>
+        </aside>
       </div>
-
-      <!-- Injected JSON Payload for Leaflet Script -->
-      <script id="nodesData" type="application/json">
-        <%- JSON.stringify(nodes).replace(/</g, '\\u003c') %>
-      </script>
+      <section class="map-legend" aria-labelledby="mapLegendTitle"><h2 id="mapLegendTitle">Legend</h2>
+        <ul><li><span class="map-room-key" aria-hidden="true"></span>Normal room</li><li><svg class="map-emergency-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5m0 3v1"/></svg>Room with an active emergency</li>
+          <li><span class="map-node-mark" data-status="online" aria-hidden="true">●</span>Online node</li><li><span class="map-node-mark" data-status="offline" aria-hidden="true">×</span>Offline node</li><li><span class="map-node-mark" data-status="unknown" aria-hidden="true">?</span>Unknown node status</li>
+          <li><span class="map-alert-badge" aria-hidden="true">2</span>Building / floor badge: active-alert count</li></ul>
+        <p>Emergency indicators stay visible when a node goes offline. Acknowledged alerts remain active until resolved.</p>
+      </section>
+      <section id="mapUnmapped" class="map-unmapped" aria-labelledby="mapUnmappedTitle" hidden><h2 id="mapUnmappedTitle">Unmapped nodes and alerts</h2><p id="mapUnmappedSummary"></p><p>These locations do not match a room in the diagrams. Update the building and room in Security nodes using the exact room labels. Alerts retain their recorded location.</p><div id="mapUnmappedNodes"></div><ul id="mapUnmappedAlerts"></ul></section>
+      <p class="map-schematic-note">Schematic only · Room arrangement follows the supplied building diagrams; sizes are not to scale. Scroll each diagram horizontally when needed.</p>
+      <noscript><p>JavaScript is required for live room indicators and node details. Open Notifications to review incidents.</p></noscript>
     </main>
-
     <%- include('partials/footer') %>
   </div>
 </div>
-
 <%- include('partials/scripts') %>

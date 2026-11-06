@@ -5,7 +5,7 @@
     return Object.entries(labels).map(([key, label]) => {
       const value = hud?.threats?.[key];
       const state = value === true ? 'on' : value === false ? 'off' : 'unknown';
-      return `<span class="hud-threat" data-state="${state}">${label} <b>${state === 'on' ? 'On' : state === 'off' ? 'Off' : '—'}</b></span>`;
+      return `<span class="hud-threat" data-state="${state}" data-emergency="${key === 'shooting' ? 'gunshot' : key === 'smoke' ? 'fire' : key}">${label} <b>${state === 'on' ? 'On' : state === 'off' ? 'Off' : '—'}</b></span>`;
     }).join('');
   }
   window.renderCameraHud = (viewport, node) => {

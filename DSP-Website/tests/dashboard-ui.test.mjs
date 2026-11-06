@@ -19,7 +19,7 @@ function dashboard({unresolved = 0, connected = 0, total = 0, search = ''} = {})
   let ready;
   vm.runInNewContext(source, {
     document:{getElementById:element,addEventListener(type,fn){if(type==='DOMContentLoaded')ready=fn;}},
-    window:{escapeHtml:String,matchMedia:()=>({matches:false}),filterBuilding:rows=>rows,addEventListener:(type,fn)=>events.set(type,fn)},
+    window:{escapeHtml:String,isLegacyBuilding:()=>false,matchMedia:()=>({matches:false}),filterBuilding:rows=>rows,addEventListener:(type,fn)=>events.set(type,fn)},
     location:{search},URL,URLSearchParams,Date,setTimeout,clearTimeout
   });
   ready();
@@ -58,3 +58,18 @@ test('a building-scoped phone URL keeps its filter controls expanded', () => {
   const {element} = dashboard({search:'?building=RSY'});
   assert.equal(element('incidentFilters').open,true);
 });
+
+test('manual incident rows remain available without restoring the redundant panic total',()=>{
+  const {element,emit,feed}=dashboard();
+  const incident={_id:'panic-1',nodeId:'NODE-1',room:'Entrance',building:'RSY',emergencyType:'panic',threatStatus:'manual_alert',status:'new',priority:2,timestamp:new Date().toISOString()};
+  emit('campus:state',{dashboard:{...feed,alerts:[incident],counts:{...feed.counts,panic:3,unresolved:1}},nodes:[]});
+  assert.equal(element('count-panic').textContent,'');
+  assert.match(element('alertFeedList').innerHTML,/data-emergency="panic"/);
+  assert.match(element('alertFeedList').innerHTML,/data-status="new"/);
+  assert.equal(element('openIncidentCount').dataset.open,'true');
+});
+
+ test('dashboard summary excludes the redundant manual panic total',async()=>{
+  const template=await readFile(new URL('../views/dashboard.ejs',import.meta.url),'utf8');
+  assert.doesNotMatch(template,/\['panic','Panic'\]/);
+ });

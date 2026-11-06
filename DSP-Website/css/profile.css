@@ -35,21 +35,21 @@
   align-items: center;
   justify-content: center;
   font-size: 1.75rem;
-  font-weight: 800;
-  color: #38bdf8;
+  font-weight:600;
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
 .profile-user-name {
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight:600;
   color: var(--text-primary);
   margin-bottom: 3px;
   letter-spacing: -0.015em;
 }
 
 .profile-user-email {
-  font-size: 0.8rem;
+  font-size:0.8125rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
   margin-bottom: 10px;

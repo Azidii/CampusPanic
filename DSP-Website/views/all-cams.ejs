@@ -3,7 +3,7 @@
   <%- include('partials/sidebar') %>
   <div class="main-content">
     <%- include('partials/navbar') %>
-    <main class="page-body" id="cctvPage" data-admin="<%= user.role === 'admin' %>">
+    <main class="page-body" tabindex="-1" id="cctvPage" data-admin="<%= user.role === 'admin' %>">
       <%- include('partials/tabs', { group: 'cameras' }) %>
       <div class="nodes-heading"><div><h1>Live cameras</h1><p>Every camera in one place. Click a camera to enlarge it.</p></div><a class="btn btn-primary" href="/security-nodes">+ Add a device →</a></div>
       <div class="cctv-toolbar"><%- include('partials/building-filter') %><div class="node-filter-group" role="group" aria-label="Filter security nodes"><button class="filter-chip active" data-node-filter="all">All nodes</button><button class="filter-chip" data-node-filter="live">Live</button><button class="filter-chip" data-node-filter="offline">Offline</button></div><span id="cctvSummary" role="status">Checking connections…</span></div>

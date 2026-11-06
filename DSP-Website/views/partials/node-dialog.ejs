@@ -2,7 +2,7 @@
   <div class="node-dialog-heading">
     <div>
       <p class="nodes-eyebrow">SECURITY NODE // ENLARGED TELEMETRY</p>
-      <h2 id="nodeDialogTitle">Live Video Feed</h2>
+      <h2 id="nodeDialogTitle">Live camera</h2>
       <p id="nodeDialogLocation" class="nodes-hint"></p>
     </div>
     <button class="btn btn-outline modal-close-btn" type="button" id="closeNodeDialog" aria-label="Close enlarged node view">&times;</button>
@@ -54,14 +54,14 @@
       <a href="/public/downloads/camera.apk" class="btn btn-outline" download="CampusPanicCamera-debug.apk">Download Android app</a>
       <p class="nodes-hint">Open this website on your phone using the laptop's Wi-Fi address, then download and install the app.</p>
       <% if (user.role === 'admin') { %>
-        <h3>Edit Node Parameters</h3>
+        <h3>Edit location</h3>
         <form id="editNodeForm" class="node-form" autocomplete="off">
           <%- include('node-fields', { prefix: 'edit' }) %>
           <button class="btn btn-primary" type="submit">Save Changes</button>
         </form>
 
         <div class="node-connection-controls">
-          <h3>Connection Setup &amp; Token</h3>
+          <h3>Phone pairing</h3>
           <p class="nodes-hint">Generating a new code revokes previous sessions. Input the fresh token in Campus Panic Camera.</p>
           <div class="node-action-row">
             <button class="btn btn-outline" id="pairNodeBtn" type="button">Reconnect / Pair Again</button>
@@ -71,7 +71,7 @@
             <label>Phone App Pairing Code</label>
             <output id="pairingCode"></output>
             <span id="pairingExpiry"></span>
-            <label>Target LAN Host IPv4 Address</label>
+            <label>Laptop address</label>
             <div id="pairingAddresses"></div>
             <p>Ensure phone and laptop operate on the same Wi-Fi subnet. Launch Campus Panic Camera, enter target IPv4:5000 and the 8-digit code.</p>
           </div>

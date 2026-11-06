@@ -6,11 +6,11 @@
   <div class="main-content">
     <%- include('partials/navbar') %>
 
-    <main class="page-body">
+    <main class="page-body" tabindex="-1" id="mainContent" tabindex="-1">
       <div class="admin-header-bar">
         <div>
-          <h1 style="font-size: 1.4rem; font-weight: 800; color: #38bdf8; margin-bottom: 4px;">User &amp; Operator Administration</h1>
-          <p style="font-size: 0.85rem; color: var(--text-secondary);">Manage campus security operator accounts, assign buildings, and control roles</p>
+          <h1>Users</h1>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Manage security accounts, buildings and access.</p>
         </div>
 
         <div>
@@ -70,7 +70,7 @@
                   </td>
                   <td style="font-family: var(--font-mono); font-size: 0.85rem;"><%= u.email %></td>
                   <td>
-                    <span class="badge <%= u.role === 'admin' ? 'badge-verified-threat' : 'badge-medical' %>">
+                    <span class="badge badge-role">
                       <%= u.role === 'admin' ? 'Administrator' : 'Guard' %>
                     </span>
                   </td>
@@ -91,7 +91,7 @@
                           Delete
                         </button>
                       <% } else { %>
-                        <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Current</span>
+                        <span style="font-size:0.8125rem; color: var(--text-muted); font-style: italic;">Current</span>
                       <% } %>
                     </div>
                   </td>

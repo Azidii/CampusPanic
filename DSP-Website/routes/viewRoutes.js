@@ -131,19 +131,9 @@ router.get('/cameras', requireViewAuth, async (req, res, next) => {
 });
 
 // 5. Campus Map View (All Nodes)
-router.get('/map', requireViewAuth, async (req, res, next) => {
-  try {
-    const nodes = await videoService.describe(await Node.find().sort({ building: 1, room: 1 }));
-    res.render('map-view', {
-      title: 'Campus Node Map — CampusPanic',
-      page: 'map-view',
-      user: req.user,
-      nodes
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+router.get('/map', requireViewAuth, (req, res) => res.render('map-view', {
+  title: 'Campus Map — CampusPanic', page: 'map-view', user: req.user
+}));
 
 // 6. Active Nodes Map (Emergency Hotspots Only)
 router.get(['/active-threats-map', '/active-nodes-map'], requireViewAuth, async (req, res, next) => {

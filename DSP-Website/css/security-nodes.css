@@ -15,7 +15,7 @@
 .nodes-heading h1 {
   font-size: 1.45rem;
   letter-spacing: -0.025em;
-  font-weight: 800;
+  font-weight:600;
   margin: 2px 0 4px;
   color: var(--text-primary);
 }
@@ -27,11 +27,11 @@
 }
 
 .nodes-eyebrow {
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #38bdf8;
+  font-size:0.8125rem;
+  font-weight:600;
+  letter-spacing:normal;
+  text-transform:none;
+  color: var(--accent);
   font-family: var(--font-mono);
 }
 
@@ -41,7 +41,7 @@
   background-color: var(--bg-secondary);
   border-radius: var(--radius-sm);
   padding: 10px 14px;
-  font-size: 0.8rem;
+  font-size:0.8125rem;
   color: var(--text-secondary);
   margin-bottom: 20px;
   font-family: var(--font-mono);
@@ -54,21 +54,21 @@
 
 .receiver-status[data-ready="true"] {
   border-left: 3px solid var(--status-online);
-  background-color: rgba(16, 185, 129, 0.06);
-  color: #a7f3d0;
-  border-color: rgba(16, 185, 129, 0.25);
+  background-color: var(--status-online-bg);
+  color: var(--status-online);
+  border-color: var(--status-online-border);
 }
 
 .receiver-status[data-ready="false"] {
-  border-left: 3px solid #f59e0b;
-  background-color: rgba(245, 158, 11, 0.06);
-  color: #fde68a;
-  border-color: rgba(245, 158, 11, 0.25);
+  border-left: 3px solid var(--threat-unverified);
+  background-color: var(--threat-unverified-bg);
+  color: var(--threat-unverified);
+  border-color: var(--threat-unverified-border);
 }
 
 .receiver-warn-icon {
   font-size: 0.95rem;
-  color: #f59e0b;
+  color: var(--threat-unverified);
   line-height: 1;
 }
 
@@ -79,14 +79,14 @@
 
 .receiver-status code {
   font-family: var(--font-mono);
-  font-size: 0.74rem;
-  background-color: rgba(245, 158, 11, 0.15);
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  color: #ffffff;
+  font-size:0.8125rem;
+  background-color: var(--threat-unverified-bg);
+  border: 1px solid var(--threat-unverified-border);
+  color: var(--text-primary);
   padding: 1px 6px;
   border-radius: var(--radius-xs);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing:normal;
 }
 
 /* 3. Asymmetric Split Workspace */
@@ -105,8 +105,8 @@
   border: 1px solid var(--border-subtle);
   overflow: hidden;
   border-radius: var(--radius-sm);
-  color: #cbd5e1;
-  box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.9), var(--shadow-card);
+  color: var(--text-secondary);
+  box-shadow:none;
 }
 
 .node-viewport img {
@@ -126,15 +126,7 @@
 .viewport-reticle {
   position: absolute;
   inset: 12px;
-  background:
-    linear-gradient(to right, #0284c7 10px, transparent 10px) top left,
-    linear-gradient(to bottom, #0284c7 10px, transparent 10px) top left,
-    linear-gradient(to left, #0284c7 10px, transparent 10px) top right,
-    linear-gradient(to bottom, #0284c7 10px, transparent 10px) top right,
-    linear-gradient(to right, #0284c7 10px, transparent 10px) bottom left,
-    linear-gradient(to top, #0284c7 10px, transparent 10px) bottom left,
-    linear-gradient(to left, #0284c7 10px, transparent 10px) bottom right,
-    linear-gradient(to top, #0284c7 10px, transparent 10px) bottom right;
+  background:var(--bg-surface-active);
   background-repeat: no-repeat;
   background-size: 10px 10px;
   opacity: 0.45;
@@ -148,10 +140,10 @@
   top: 12px;
   left: 12px;
   font-family: var(--font-mono);
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
+  font-size:0.8125rem;
+  letter-spacing:normal;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-secondary);
   background: rgba(7, 8, 12, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 3px 8px;
@@ -169,7 +161,7 @@
   height: 6px;
   border-radius: 50%;
   background-color: var(--threat-verified);
-  box-shadow: 0 0 6px var(--threat-verified);
+  box-shadow:none;
 }
 
 /* Hide offline tags when camera stream is active */
@@ -192,7 +184,7 @@
 
 .camera-symbol {
   font-size: 2.2rem;
-  color: #475569;
+  color: var(--text-muted);
   line-height: 1;
 }
 
@@ -204,7 +196,7 @@
 }
 
 .node-idle > span:last-child {
-  font-size: 0.78rem;
+  font-size:0.8125rem;
   color: var(--text-muted);
   max-width: 320px;
   line-height: 1.5;
@@ -219,15 +211,15 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   padding: 4px 9px;
   border-radius: var(--radius-xs);
-  font-size: 0.68rem;
+  font-size:0.8125rem;
   font-weight: 700;
-  color: #94a3b8;
+  color: var(--text-secondary);
   font-family: var(--font-mono);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing:normal;
+  text-transform:none;
   z-index: 5;
   pointer-events: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-shadow:none;
 }
 
 /* Create Node Panel (Right Column) */
@@ -257,75 +249,12 @@
   width: 100%;
 }
 
+.node-form select:disabled { color:var(--text-muted); background:var(--bg-recessed); cursor:not-allowed; }
+
 .node-submit-btn {
   margin-top: 4px;
   width: 100%;
   padding: 10px 16px;
-}
-
-/* Interactive Collapsible Disclosure for Map Coordinates */
-.node-map-fields {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background-color: var(--bg-recessed);
-  overflow: hidden;
-  margin-top: 4px;
-}
-
-.node-map-fields summary {
-  cursor: pointer;
-  padding: 10px 14px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: var(--transition-fast);
-  background-color: rgba(255, 255, 255, 0.02);
-  list-style: none;
-}
-
-.node-map-fields summary::-webkit-details-marker {
-  display: none;
-}
-
-.disclosure-arrow {
-  display: inline-block;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  transition: transform 0.15s ease;
-}
-
-.node-map-fields[open] .disclosure-arrow {
-  transform: rotate(90deg);
-  color: #38bdf8;
-}
-
-.node-map-fields summary:hover {
-  color: var(--text-primary);
-  background-color: rgba(255, 255, 255, 0.04);
-}
-
-.node-map-fields[open] summary {
-  border-bottom: 1px solid var(--border-subtle);
-  color: #38bdf8;
-}
-
-.node-map-fields .coordinate-fields {
-  padding: 14px 14px 8px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.node-map-fields .nodes-hint {
-  padding: 0 14px 12px;
-  font-size: 0.72rem;
-  color: var(--text-muted);
 }
 
 .node-audio-controls { margin-top: 16px; padding: 16px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); }
@@ -358,7 +287,7 @@
   border-radius: var(--radius-sm);
   padding: 10px 14px;
   margin-top: 16px;
-  font-size: 0.78rem;
+  font-size:0.8125rem;
   color: var(--text-secondary);
 }
 
@@ -367,27 +296,27 @@
   align-items: center;
   gap: 8px;
   color: var(--text-primary);
-  font-size: 0.74rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size:0.8125rem;
+  text-transform:none;
+  letter-spacing:normal;
   font-family: var(--font-mono);
 }
 
 .slot-badge {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-strong);
-  color: #38bdf8;
+  color: var(--accent);
   padding: 2px 6px;
   border-radius: var(--radius-xs);
-  font-size: 0.65rem;
-  font-weight: 800;
+  font-size:0.8125rem;
+  font-weight:600;
 }
 
 .slot-status {
-  font-size: 0.72rem;
+  font-size:0.8125rem;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  letter-spacing: 0.04em;
+  letter-spacing:normal;
 }
 
 /* Bottom "Your Security Nodes" Section */
@@ -401,7 +330,7 @@
 #nodeCount {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 0.74rem;
+  font-size:0.8125rem;
   color: var(--text-muted);
   background-color: var(--bg-surface);
   border: 1px solid var(--border-subtle);
@@ -444,25 +373,25 @@
   display: block;
   color: var(--text-secondary);
   margin-top: 3px;
-  font-size: 0.76rem;
+  font-size:0.8125rem;
 }
 
 .node-state {
-  font-size: 0.68rem;
-  letter-spacing: 0.05em;
-  font-weight: 800;
+  font-size:0.8125rem;
+  letter-spacing:normal;
+  font-weight:600;
   color: var(--text-muted);
   white-space: nowrap;
   font-family: var(--font-mono);
 }
 
 .node-state[data-live="true"] {
-  color: #34d399;
+  color: var(--status-online);
 }
 
 .node-state[data-live="true"]::before {
   content: '● ';
-  font-size: 0.75rem;
+  font-size:0.8125rem;
 }
 
 /* CCTV Toolbar & Matrix */
@@ -476,7 +405,7 @@
 }
 
 .cctv-toolbar > span {
-  font-size: 0.78rem;
+  font-size:0.8125rem;
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -493,7 +422,7 @@
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
   padding: 6px 12px;
-  font-size: 0.76rem;
+  font-size:0.8125rem;
   cursor: pointer;
   font-weight: 600;
   transition: var(--transition-fast), var(--transition-press);
@@ -509,9 +438,9 @@
 }
 
 .node-filter-group .filter-chip.active {
-  background-color: rgba(2, 132, 199, 0.16);
+  background-color: var(--accent-soft);
   border-color: var(--border-focus);
-  color: #38bdf8;
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -567,7 +496,7 @@
 }
 
 .node-card-location {
-  font-size: 0.76rem;
+  font-size:0.8125rem;
   color: var(--text-secondary);
   padding: 0 14px 10px;
   overflow-wrap: anywhere;
@@ -580,7 +509,7 @@
   padding: 9px 14px;
   border-top: 1px solid var(--border-subtle);
   color: var(--text-muted);
-  font-size: 0.7rem;
+  font-size:0.8125rem;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
@@ -609,7 +538,7 @@
   border-radius: var(--radius-lg);
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  box-shadow: var(--shadow-pop);
+  box-shadow:none;
 }
 
 .node-dialog::backdrop {
@@ -627,7 +556,7 @@
 
 .node-dialog-heading h2 {
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight:600;
   letter-spacing: -0.015em;
   overflow-wrap: anywhere;
 }
@@ -684,16 +613,16 @@
 }
 
 .node-live-details dt {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size:0.8125rem;
+  text-transform:none;
+  letter-spacing:normal;
   color: var(--text-muted);
   margin-bottom: 3px;
   font-family: var(--font-mono);
 }
 
 .node-live-details dd {
-  font-size: 0.78rem;
+  font-size:0.8125rem;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
@@ -713,31 +642,31 @@
 }
 
 .pairing-panel label {
-  font-size: 0.7rem;
+  font-size:0.8125rem;
   font-weight: 700;
-  text-transform: uppercase;
+  text-transform:none;
   color: var(--text-secondary);
-  letter-spacing: 0.04em;
+  letter-spacing:normal;
 }
 
 .pairing-panel output {
   font-family: var(--font-mono);
   font-size: 1.75rem;
-  letter-spacing: 0.12em;
-  color: #38bdf8;
-  font-weight: 800;
+  letter-spacing:normal;
+  color: var(--accent);
+  font-weight:600;
   line-height: 1.1;
   user-select: all;
 }
 
 .pairing-panel p, .pairing-panel span {
-  font-size: 0.74rem;
+  font-size:0.8125rem;
   color: var(--text-secondary);
 }
 
 .pairing-address {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size:0.8125rem;
   display: block;
   margin: 3px 0;
   user-select: all;
@@ -748,8 +677,8 @@
 }
 
 .node-error {
-  font-size: 0.78rem;
-  color: #fca5a5;
+  font-size:0.8125rem;
+  color: var(--threat-verified);
   margin-top: 4px;
 }
 
@@ -764,7 +693,7 @@
   display: block;
   padding: 8px 0;
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.78rem;
+  font-size:0.8125rem;
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -772,7 +701,7 @@
 }
 
 .incident-link:hover {
-  color: #38bdf8;
+  color: var(--accent);
 }
 
 .incident-link:active {
@@ -811,6 +740,12 @@
     padding: 16px;
   }
   .node-muted {
-    font-size: 0.62rem;
+    font-size:0.8125rem;
   }
 }
+
+.node-viewport { background:var(--bg-recessed); box-shadow:none; }
+.node-audio-space { flex-wrap:wrap; }
+.receiver-status code { color:var(--threat-unverified); }
+.security-cctv-grid { grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr)); }
+.node-filter-group .filter-chip.active { background:transparent; color:var(--text-primary); border-color:var(--accent); }

@@ -41,16 +41,16 @@ test('dashboard isolation, building filters, unique node names and guarded alert
     let nodeId;
     await t.test('building and name validation; case/space duplicates, concurrent submissions and unchanged edits',async()=>{
       for(const body of [{name:'  ',building:'RSY',room:'A'},{name:'Gate',building:'Other',room:'A'},{name:'Gate',building:'rsy',room:'A'}]) assert.equal((await request('/api/nodes',{method:'POST',body})).status,400);
-      const responses=await Promise.all([' Gate ','gAtE'].map((name,i)=>request('/api/nodes',{method:'POST',body:{name,building:i?'RG Birrey':'RSY',room:'A',lat:0,lng:0}})));
+      const responses=await Promise.all([' Gate ','gAtE'].map((name,i)=>request('/api/nodes',{method:'POST',body:{name,building:i?'RG Birrey':'RSY',floor:'1',room:i?'R101':'C101',lat:0,lng:0}})));
       assert.deepEqual(responses.map(r=>r.status).sort(),[201,409]);
       const duplicate=await responses.find(r=>r.status===409).json();assert.match(duplicate.message,/name already exists/);
       const created=await responses.find(r=>r.status===201).json();nodeId=created.node.nodeId;
-      const body={name:'Gate',building:'RSY',room:'B',lat:0,lng:0};
+      const body={name:'Gate',building:'RSY',floor:'1',room:'C102',lat:0,lng:0};
       assert.equal((await request('/api/nodes/'+nodeId,{method:'PUT',body})).status,200);
-      const camera=await Camera.findOne({nodeId});assert.equal(camera.label,'Gate');assert.equal(camera.building,'RSY');assert.equal(camera.room,'B');
+      const camera=await Camera.findOne({nodeId});assert.equal(camera.label,'Gate');assert.equal(camera.building,'RSY');assert.equal(camera.room,'C102');
       const cameras=await (await request('/api/cameras?building=RSY')).json();assert.equal(cameras.cameras.length,1);assert.equal(cameras.cameras[0].label,'Gate');
-      assert.equal((await Node.findOne({nodeId})).lat,0);
-      const other=await request('/api/nodes',{method:'POST',body:{name:'Courtyard',building:'RG Birrey',room:'Court'}});assert.equal(other.status,201);
+      assert.equal((await Node.findOne({nodeId})).lat,null);
+      const other=await request('/api/nodes',{method:'POST',body:{name:'Courtyard',building:'RG Birrey',floor:'1',room:'Main Hall'}});assert.equal(other.status,201);
       const otherId=(await other.json()).node.nodeId;
       assert.equal((await request('/api/nodes/'+otherId,{method:'PUT',body:{...body,name:' gATE '}})).status,409);
       assert.equal((await request('/api/nodes',{user:'alice',method:'POST',body})).status,403);
@@ -132,7 +132,7 @@ test('dashboard isolation, building filters, unique node names and guarded alert
         const responses=await Promise.all(Array.from({length:20},()=>request('/api/live')));
         assert.ok(responses.every(r=>r.status===200));await Promise.all(responses.map(r=>r.arrayBuffer()));
       }
-      assert.equal((await request('/api/nodes/'+nodeId,{method:'PUT',body:{name:'Gate',building:'RG Birrey',room:'B'}})).status,200);
+      assert.equal((await request('/api/nodes/'+nodeId,{method:'PUT',body:{name:'Gate',building:'RG Birrey',floor:'2',room:'R602'}})).status,200);
     });
   } finally {
     if(server?.listening) await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});

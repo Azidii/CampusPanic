@@ -6,10 +6,10 @@
   <div class="main-content">
     <%- include('partials/navbar') %>
 
-    <main class="page-body">
+    <main class="page-body" tabindex="-1" id="mainContent" tabindex="-1">
       <div style="margin-bottom: 24px;">
-        <h1 style="font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">Operator Profile</h1>
-        <p style="font-size: 0.85rem; color: var(--text-secondary);">Manage account credentials and assigned campus security sectors</p>
+        <h1>Profile</h1>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">Your account details, password and assigned building.</p>
       </div>
 
       <div class="profile-grid">
@@ -23,7 +23,7 @@
               <div class="profile-user-name"><%= user.name %></div>
               <div class="profile-user-email"><%= user.email %></div>
               <div>
-                <span class="badge <%= user.role === 'admin' ? 'badge-verified-threat' : 'badge-medical' %>">
+                <span class="badge badge-role">
                   <%= user.role === 'admin' ? 'System Administrator' : 'Security Guard' %>
                 </span>
               </div>

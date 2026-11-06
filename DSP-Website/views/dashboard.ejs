@@ -3,7 +3,7 @@
   <%- include('partials/sidebar') %>
   <div class="main-content">
     <%- include('partials/navbar') %>
-    <main class="page-body page-body-dashboard">
+    <main class="page-body page-body-dashboard" tabindex="-1" id="mainContent">
       <div class="feed-heading dashboard-heading"><div><h1>Dashboard</h1><p>Campus incidents, live signals, and response activity.</p></div><p id="dashboardConnection" class="dashboard-connection" role="status">Updating incident reports…</p></div>
       <p id="outsideIncidents"><%= feed.outsideOpen %> open incidents outside this building selection. <a href="/notifications">Campus-wide notifications →</a></p>
       <section class="stats-grid" aria-label="Incident totals in the selected building, including resolved and cleared incidents">
@@ -27,7 +27,7 @@
           <svg class="radar-display" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
             <circle class="radar-ground" cx="100" cy="100" r="94"/>
             <g class="radar-grid" fill="none"><circle cx="100" cy="100" r="88" stroke-dasharray="2 6"/><circle cx="100" cy="100" r="64"/><circle cx="100" cy="100" r="38"/><path d="M12 100h176M100 12v176"/></g>
-            <g class="radar-sweep"><foreignObject x="12" y="12" width="176" height="176"><div xmlns="http://www.w3.org/1999/xhtml" class="radar-scan-gradient"></div></foreignObject><path d="M100 100V12" stroke="currentColor" stroke-width="1.5"/></g>
+            <g class="radar-sweep"><foreignObject x="12" y="12" width="176" height="176"><div xmlns="http://www.w3.org/1999/xhtml" class="radar-scan-gradient"></div></foreignObject><path d="M100 100V12" stroke="currentColor" stroke-width="2.5"/></g>
             <circle class="radar-center" cx="100" cy="100" r="6"/>
           </svg>
           <div class="radar-copy"><h3 id="radarTitle">No open incidents</h3><p id="radarDescription">No open incidents in this building selection.</p><p class="radar-connection"><span class="radar-status-dot" aria-hidden="true"></span><span id="radarConnection">Waiting for a live update</span></p></div>

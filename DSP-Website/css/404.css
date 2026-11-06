@@ -15,18 +15,18 @@
 
 .notfound-code {
   font-size: 5rem;
-  font-weight: 900;
+  font-weight:600;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--threat-verified);
+  color:var(--text-muted);
   margin-bottom: 12px;
   letter-spacing: -0.02em;
 }
 
 .notfound-title {
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight:600;
   letter-spacing: -0.02em;
   color: var(--text-primary);
   margin-bottom: 8px;

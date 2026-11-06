@@ -38,7 +38,7 @@
 }
 
 .setting-info .setting-desc {
-  font-size: 0.78rem;
+  font-size:0.8125rem;
   color: var(--text-muted);
 }
 
@@ -85,13 +85,13 @@ input:focus-visible + .slider {
 }
 
 input:checked + .slider {
-  background-color: #0284c7;
-  border-color: #0369a1;
+  background-color: var(--accent);
+  border-color: var(--accent);
 }
 
 input:checked + .slider:before {
   transform: translateX(20px);
-  background-color: #ffffff;
+  background-color: var(--text-primary);
 }
 
 /* Theme Selection Cards */
@@ -125,7 +125,7 @@ input:checked + .slider:before {
 .theme-card.active {
   border-color: var(--border-focus);
   background-color: var(--bg-surface-active);
-  box-shadow: 0 0 0 1px var(--border-focus);
+  box-shadow:none;
 }
 
 .theme-preview-box {
@@ -137,7 +137,7 @@ input:checked + .slider:before {
 }
 
 .preview-dark {
-  background-color: #0b0e14;
+  background-color: var(--bg-recessed);
 }
 
 .preview-light {
@@ -149,3 +149,9 @@ input:checked + .slider:before {
   font-size: 0.84rem;
   color: var(--text-primary);
 }
+
+input:checked + .slider { background:var(--accent); border-color:var(--accent); }
+input:checked + .slider:before { background:var(--text-inverse); }
+.preview-dark { background:#10161e; }
+.preview-light { background:#e3e9ef; }
+.setting-row { gap:20px; }

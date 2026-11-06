@@ -7,6 +7,8 @@ import { videoService } from '../services/videoService.js';
 import { issuePairing } from '../services/nodePairing.js';
 import { EspDevice } from '../models/EspDevice.js';
 import { BUILDINGS, buildingFilter } from '../services/alertFeed.js';
+// Load the same dependency-free location catalog used by the schematic and forms.
+import '../js/map-data.js';
 
 const router = express.Router();
 router.use(requireAuth, (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
@@ -20,16 +22,10 @@ function details(body) {
     }
     result[key] = body[key].trim();
   }
-  const hasLat = body.lat !== undefined && body.lat !== null && body.lat !== '';
   if (!BUILDINGS.includes(result.building)) throw Object.assign(new Error('Building must be RSY or RG Birrey.'), { statusCode: 400 });
-  const hasLng = body.lng !== undefined && body.lng !== null && body.lng !== '';
-  if (hasLat !== hasLng) throw Object.assign(new Error('Provide both latitude and longitude, or leave both blank'), { statusCode: 400 });
-  result.lat = hasLat ? Number(body.lat) : null;
-  result.lng = hasLng ? Number(body.lng) : null;
-  if (hasLat && (!Number.isFinite(result.lat) || !Number.isFinite(result.lng) ||
-    Math.abs(result.lat) > 90 || Math.abs(result.lng) > 180)) {
-    throw Object.assign(new Error('Invalid map coordinates'), { statusCode: 400 });
-  }
+  const location = globalThis.CampusMap.locate(result);
+  if (!location || body.floor !== location.floor.id) throw Object.assign(new Error('Select a valid building, floor and room.'), { statusCode: 400 });
+  result.room = location.label;
   return result;
 }
 

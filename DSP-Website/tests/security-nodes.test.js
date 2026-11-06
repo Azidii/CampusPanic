@@ -79,11 +79,11 @@ test('security-node gateway with real model and isolated test database', { timeo
       const guardPage = await (await request('/cameras', { cookie: guard })).text();
       assert.doesNotMatch(guardPage, /id="deleteNodeBtn"|id="editNodeForm"/);
     });
-    await t.test('admin creates persistent named nodes, optional coordinates and unique expiring codes', async () => {
+    await t.test('admin creates persistent named nodes with schematic locations and unique expiring codes', async () => {
       assert.equal((await request('/api/nodes', { cookie: guard, method: 'POST', body: { name: 'forbidden', building: 'A', room: '1' } })).status, 403);
       assert.equal((await request('/api/nodes', { cookie: admin, method: 'POST', body: { name: '', building: 'A', room: '1' } })).status, 400);
-      for (const [name, room] of [['Entrance', 'Hallway'], ['Library', 'Reading room']]) {
-        const response = await request('/api/nodes', { cookie: admin, method: 'POST', body: { name, room, building: 'RSY' } });
+      for (const [name, room] of [['Entrance', 'C101'], ['Library', 'Library']]) {
+        const response = await request('/api/nodes', { cookie: admin, method: 'POST', body: { name, room, building: 'RSY', floor:room === 'Library' ? '2' : '1' } });
         assert.equal(response.status, 201);
         const result = await response.json(); assert.match(result.pairing.code, /^\d{8}$/);
         assert.equal(result.node.lat, null); assert.equal(result.node.video.live, false);
@@ -137,12 +137,12 @@ test('security-node gateway with real model and isolated test database', { timeo
       return request('/api/camera/connect', { method: 'POST', phone: { code: result.pairing.code } });
     }
     await t.test('metadata edits are allowed only to admins and cannot overwrite protected fields', async () => {
-      const values = { name: '<script>New name</script>', building: 'RG Birrey', room: 'Room 2', lat: 0, lng: 0,
+      const values = { name: '<script>New name</script>', building: 'RG Birrey', floor:'2', room: 'R602', lat: 0, lng: 0,
         nodeId: 'OVERRIDE', status: 'active', pairingHash: 'injected' };
       assert.equal((await request(`/api/nodes/${a.node.nodeId}`, { cookie: guard, method: 'PUT', body: values })).status, 403);
       assert.equal((await request(`/api/nodes/${a.node.nodeId}`, { cookie: admin, method: 'PUT', body: values })).status, 200);
       const node = await Node.findOne({ nodeId: a.node.nodeId }).select('+pairingHash');
-      assert.equal(node.lat, 0); assert.equal(node.lng, 0); assert.notEqual(node.pairingHash, 'injected'); assert.notEqual(node.status, 'active');
+      assert.equal(node.lat, null); assert.equal(node.lng, null); assert.notEqual(node.pairingHash, 'injected'); assert.notEqual(node.status, 'active');
       const map = await (await request('/map', { cookie: admin })).text();
       assert.ok(!map.includes('<script>New name</script>'));
     });

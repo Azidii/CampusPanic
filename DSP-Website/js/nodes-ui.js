@@ -5,6 +5,40 @@ document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('setupNodeList');
   const editForm = document.getElementById('editNodeForm');
   const createForm = document.getElementById('createNodeForm');
+  function locationFields(form) {
+    if (!form) return null;
+    const { building, floor, room } = form.elements;
+    const help = form.querySelector('[data-location-help]');
+    const options = (select, prompt, values) => {
+      select.replaceChildren(new Option(prompt, ''), ...values.map(([value, label]) => new Option(label, value)));
+      select.value = ''; select.disabled = values.length === 0;
+    };
+    function updateRooms() {
+      const selected = CampusMap.buildings.find(b => b.label === building.value)?.floors.find(f => f.id === floor.value);
+      options(room, selected ? 'Choose a room' : 'Choose a floor first', (selected?.rows.flat() || []).map(r => [r.label, r.label]));
+    }
+    function updateFloors() {
+      const selected = CampusMap.buildings.find(b => b.label === building.value);
+      const labels = { 1: '1st Floor', 2: '2nd Floor', 3: '3rd Floor' };
+      options(floor, selected ? 'Choose a floor' : 'Choose a building first', (selected?.floors || []).map(f => [f.id, labels[f.id]]));
+      updateRooms();
+    }
+    options(building, 'Choose a building', CampusMap.buildings.map(b => [b.label, b.label]));
+    updateFloors();
+    building.addEventListener('change', () => { updateFloors(); help.textContent = building.value ? 'Select a floor to see its rooms.' : 'Select a building, then a floor, then a room.'; });
+    floor.addEventListener('change', () => { updateRooms(); help.textContent = floor.value ? 'Select a room on this floor.' : 'Select a floor to see its rooms.'; });
+    room.addEventListener('change', () => { help.textContent = room.value ? 'This location matches the campus map.' : 'Select a room on this floor.'; });
+    return node => {
+      const mapped = CampusMap.locate(node);
+      building.value = CampusMap.buildings.find(b => b.label === node.building)?.label || '';
+      updateFloors();
+      if (mapped) { building.value = mapped.building.label; updateFloors(); floor.value = mapped.floor.id; updateRooms(); room.value = mapped.label; }
+      help.textContent = mapped ? 'This location matches the campus map.' :
+        `Saved location: ${node.building || 'No building'} · ${node.room || 'No room'}. Select its building, floor and room before saving.`;
+    };
+  }
+  const editLocation = locationFields(editForm);
+  locationFields(createForm);
   let nodes = [];
   let receiver = {};
   let selectedId = null;
@@ -75,8 +109,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!badge) return;
     const phoneAudio = node?.phoneAudio || node?.audioCNN;
     if (phoneAudio?.alert) {
-      badge.style.background = '#dc2626';
-      badge.style.color = '#ffffff';
+      badge.style.background = 'var(--threat-verified-bg)';
+      badge.style.color = 'var(--threat-verified)';
       badge.style.fontWeight = 'bold';
     } else {
       badge.style.background = '';
@@ -277,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedId = id;
     expiresAt = null;
     document.getElementById('pairingPanel')?.setAttribute('hidden', '');
-    if (editForm) for (const key of ['name', 'building', 'room', 'lat', 'lng']) if (editForm.elements[key]) editForm.elements[key].value = node[key] ?? '';
+    if (editForm) { editForm.elements.name.value = node.name || ''; editLocation(node); }
     message('');
     espMessage('');
     const pin = document.getElementById('esp32Pin'); if (pin) pin.value = '';
@@ -371,8 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
   editForm?.addEventListener('submit', event => {
     event.preventDefault();
     const id = selectedId;
-    const current = nodes.find(node => node.nodeId === id);
-    const values = { lat: current?.lat ?? null, lng: current?.lng ?? null, ...Object.fromEntries(new FormData(editForm)) };
+    const values = Object.fromEntries(new FormData(editForm));
     action(async () => {
       await api(`/api/nodes/${encodeURIComponent(id)}`, 'PUT', values);
       dialog.close();

@@ -10,16 +10,16 @@
       <%- include('partials/navbar') %>
     <% } %>
 
-    <main class="page-body">
+    <main class="page-body" tabindex="-1" id="mainContent" tabindex="-1">
       <div class="notfound-container">
         <div class="notfound-code">404</div>
-        <h1 class="notfound-title">Restricted / Non-Existent Area</h1>
+        <h1 class="notfound-title">Page not found</h1>
         <p class="notfound-message">
-          <%= typeof message !== 'undefined' && message ? message : 'The operations console endpoint or camera telemetry channel requested does not exist or has been relocated.' %>
+          <%= typeof message !== 'undefined' && message ? message : 'Check the address or return to the dashboard.' %>
         </p>
 
         <a href="/" class="btn btn-primary" style="padding: 10px 24px;">
-          &larr; Return to Operations Dashboard
+          &larr; Return to dashboard
         </a>
       </div>
     </main>

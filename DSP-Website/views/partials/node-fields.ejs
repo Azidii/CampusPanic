@@ -4,35 +4,23 @@
 </div>
 
 <div class="form-group">
-  <label class="form-label" for="<%= prefix %>Building">Building / Area</label>
-  <select class="form-input" id="<%= prefix %>Building" name="building" required aria-describedby="<%= prefix %>BuildingHelp">
-    <option value="" disabled selected>Choose a building</option>
-    <option value="RSY">RSY</option>
-    <option value="RG Birrey">RG Birrey</option>
+  <label class="form-label" for="<%= prefix %>Building">Building</label>
+  <select class="form-input" id="<%= prefix %>Building" name="building" required aria-describedby="<%= prefix %>LocationHelp">
+    <option value="">Choose a building</option>
   </select>
-  <small id="<%= prefix %>BuildingHelp">Legacy locations must be corrected explicitly before saving.</small>
+</div>
+
+<div class="form-group">
+  <label class="form-label" for="<%= prefix %>Floor">Floor</label>
+  <select class="form-input" id="<%= prefix %>Floor" name="floor" required disabled aria-describedby="<%= prefix %>LocationHelp">
+    <option value="">Choose a building first</option>
+  </select>
 </div>
 
 <div class="form-group">
   <label class="form-label" for="<%= prefix %>Room">Room / Location</label>
-  <input class="form-input" id="<%= prefix %>Room" name="room" required maxlength="100" placeholder="e.g. Hallway Corridor A-12">
+  <select class="form-input" id="<%= prefix %>Room" name="room" required disabled aria-describedby="<%= prefix %>LocationHelp">
+    <option value="">Choose a floor first</option>
+  </select>
 </div>
-
-<!-- Interactive Collapsible Control for Geospatial Coordinates -->
-<details class="node-map-fields">
-  <summary>
-    <span class="disclosure-arrow">&#9656;</span>
-    <span>Map Coordinates (Optional)</span>
-  </summary>
-  <div class="coordinate-fields">
-    <div>
-      <label class="form-label" for="<%= prefix %>Lat">Latitude</label>
-      <input class="form-input font-mono" id="<%= prefix %>Lat" name="lat" type="number" step="any" min="-90" max="90" placeholder="14.5995">
-    </div>
-    <div>
-      <label class="form-label" for="<%= prefix %>Lng">Longitude</label>
-      <input class="form-input font-mono" id="<%= prefix %>Lng" name="lng" type="number" step="any" min="-180" max="180" placeholder="120.9842">
-    </div>
-  </div>
-  <p class="nodes-hint">Only enter verified coordinates. Leave both blank if the location is unknown.</p>
-</details>
+<p class="nodes-hint" id="<%= prefix %>LocationHelp" data-location-help role="status">Select a building, then a floor, then a room.</p>
