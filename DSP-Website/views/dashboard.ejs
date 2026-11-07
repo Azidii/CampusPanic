@@ -35,8 +35,9 @@
       </section>
       <details class="node-threat-panel"><summary>Device status in this building selection</summary><div id="nodeThreatRows"><p>Checking connected hardware…</p></div><a href="/security-nodes">Manage devices →</a></details>
       <section class="resolved-history" aria-labelledby="resolvedTitle">
-        <div class="feed-heading"><h2 id="resolvedTitle">Resolved history</h2><div class="feed-actions"><label class="checkbox-label"><input type="checkbox" id="showCleared"> Show cleared</label><button class="btn btn-outline btn-sm" id="clearResolved">Clear resolved</button></div></div>
+        <div class="feed-heading"><h2 id="resolvedTitle">Resolved history</h2><div class="feed-actions"><label class="checkbox-label"><input type="checkbox" id="showCleared"> Show cleared</label><button class="btn btn-outline btn-sm" id="clearResolved">Clear resolved</button><% if (user.role === 'admin') { %><button type="button" class="btn btn-danger btn-sm" id="resetResolved">Reset resolved history</button><% } %></div></div>
         <p>Clearing hides resolved incidents for your account only. History, notifications and incident links stay available.</p>
+        <% if (user.role === 'admin') { %><p>Reset permanently deletes resolved incidents and snapshots in the selected building for everyone, including cleared incidents, and updates detection totals. Open incidents are kept.</p><% } %>
         <details id="historyDetails"><summary id="historySummary">Browse resolved incidents</summary>
         <div id="resolvedFeed" class="alert-feed-list"><% for (const a of feed.history) { %><%- include('partials/incident-card', {a}) %><% } %></div>
         <p id="resolvedEmpty" class="feed-empty" <%= feed.history.length ? 'hidden' : '' %>>No resolved incidents match. Use Show cleared to include incidents you cleared.</p>

@@ -4,9 +4,9 @@ import { Node } from '../models/Node.js';
 import { withIncidentReset } from './incidentGuard.js';
 import { removeSnapshot } from '../utils/snapshots.js';
 
-export async function resetPreview() {
+export async function resetPreview(scope = {}) {
   const hash = createHash('sha256'); let count = 0;
-  for await (const alert of Alert.find().select('_id updatedAt imageUrl').sort({ _id: 1 }).lean().cursor()) {
+  for await (const alert of Alert.find(scope).select('_id updatedAt imageUrl').sort({ _id: 1 }).lean().cursor()) {
     hash.update(JSON.stringify(alert)); count++;
   }
   return { count, fingerprint: hash.digest('hex') };
@@ -17,14 +17,14 @@ export async function reconcileNodeIncidents(nodeIds) {
   // Connectivity is projected from live camera sessions / ESP32 heartbeats, never from incident closure.
   await Node.updateMany({ nodeId: { $in: nodeIds, $nin: active }, status: 'active' }, { $set: { status: 'offline' } });
 }
-export async function deleteAllAlerts(expected, remove = removeSnapshot) {
+export async function deleteAllAlerts(expected, remove = removeSnapshot, scope = {}) {
   return withIncidentReset(async () => {
-    const current = await resetPreview();
+    const current = await resetPreview(scope);
     if (current.count !== expected.count || current.fingerprint !== expected.fingerprint) {
       throw Object.assign(new Error('Alerts changed. Review the current count and confirm again.'), { statusCode: 409 });
     }
     let deleted = 0; const failures = [];
-    for await (const alert of Alert.find().select('_id imageUrl').lean().cursor()) {
+    for await (const alert of Alert.find(scope).select('_id imageUrl').lean().cursor()) {
       try {
         await remove(alert.imageUrl);
         const result = await Alert.deleteOne({ _id: alert._id }); deleted += result.deletedCount;
@@ -33,6 +33,6 @@ export async function deleteAllAlerts(expected, remove = removeSnapshot) {
     let reconciled = true;
     try { await reconcileNodeIncidents(await Node.distinct('nodeId')); }
     catch { reconciled = false; }
-    return { deleted, remaining: await Alert.countDocuments(), failures, reconciled };
+    return { deleted, remaining: await Alert.countDocuments(scope), failures, reconciled };
   });
 }
