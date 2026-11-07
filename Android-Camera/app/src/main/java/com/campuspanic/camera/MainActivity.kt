@@ -73,6 +73,8 @@ class MainActivity : ComponentActivity() {
     private var lastAudioAt = 0L
     private var audioAlert = false
     private var audioClass = ""
+    private var audioConfidence = 0.0f
+    private var lastGunConfidence = 0.0f
     private var hudAlarm = false
     @Volatile private var detectionUploading = false
     private var nextDetectionAt = 0L
@@ -286,15 +288,20 @@ class MainActivity : ComponentActivity() {
         }
         hudBottom.text = values.entries.joinToString("   ") { (name, value) -> "$name ${when (value) { true -> "On"; false -> "Off"; null -> "—" }}" }
         val active = values.filterValues { it == true }.keys
-        val alarm = active.isNotEmpty() || audioFresh
-        alertBanner.text = CameraHudStatus.banner(
-            streaming = running,
-            connected = connected,
-            freshStatus = fresh && values.values.none { it == null },
-            activeThreats = active,
-            audioAlert = audioFresh
-        )
-        alertBanner.setBackgroundColor(if (alarm) Color.rgb(185, 28, 28) else Color.argb(80, 8, 47, 73))
+        val alarm = active.isNotEmpty() || audioFresh || videoGun
+        val audioPct = (audioConfidence * 100).toInt()
+        val videoPct = (lastGunConfidence * 100).toInt()
+
+        alertBanner.text = when {
+            !running -> "NOT STREAMING"
+            videoGun -> "🚨 ON-DEVICE THREAT: GUN DETECTED ($videoPct%)"
+            audioFresh && audioClass.isNotBlank() -> "🚨 AUDIO THREAT: ${audioClass.uppercase()} ($audioPct%)"
+            active.isNotEmpty() -> active.joinToString(" / ").uppercase() + " ALERT"
+            !connected -> "CONNECTING TO CAMPUS CCTV"
+            !fresh || values.values.any { it == null } -> "NODE STATUS UNAVAILABLE"
+            else -> "NO ACTIVE ALERTS REPORTED"
+        }
+        alertBanner.setBackgroundColor(if (alarm) Color.rgb(220, 38, 38) else Color.argb(80, 8, 47, 73))
         alertBanner.setTextColor(if (alarm) Color.WHITE else Color.rgb(186, 230, 253))
         if (alarm && !hudAlarm) triggerThreatFeedback()
         hudAlarm = alarm
@@ -460,18 +467,17 @@ class MainActivity : ComponentActivity() {
         lastAudioAt = SystemClock.elapsedRealtime()
         audioAlert = result.alert
         audioClass = result.classification
+        audioConfidence = result.confidence
         val pct = (result.confidence * 100).toInt()
         if (result.alert) {
             audioBadge.text = "Audio: ⚠️ ${result.classification} ($pct%)"
             audioBadge.setTextColor(Color.rgb(239, 68, 68))
-            alertBanner.text = "🚨 AUDIO THREAT DETECTED: ${result.classification.uppercase()} ($pct%)"
-            alertBanner.setTextColor(Color.WHITE)
-            alertBanner.setBackgroundColor(Color.rgb(220, 38, 38))
             triggerThreatFeedback()
         } else {
-            audioBadge.text = "Audio: Clear (${result.classification} $pct%)"
+            audioBadge.text = "Audio: Clear"
             audioBadge.setTextColor(Color.rgb(167, 243, 208))
         }
+        refreshHud()
     }
 
     private fun analyze(image: ImageProxy, epoch: Int) {
@@ -538,16 +544,15 @@ class MainActivity : ComponentActivity() {
                         if (numGuns > 0) {
                             val maxConf = (detections.maxOf { it.confidence } * 100).toInt()
                             lastGunAt = SystemClock.elapsedRealtime()
+                            lastGunConfidence = detections.maxOf { it.confidence }
                             cnnBadge.text = "Video CNN: ⚠️ GUN DETECTED ($maxConf%) [${inferenceMs.toInt()}ms]"
                             cnnBadge.setTextColor(Color.rgb(239, 68, 68))
-                            alertBanner.text = "🚨 ON-DEVICE THREAT: GUN DETECTED ($maxConf%)"
-                            alertBanner.setTextColor(Color.WHITE)
-                            alertBanner.setBackgroundColor(Color.rgb(220, 38, 38))
                             triggerThreatFeedback()
                         } else {
                             cnnBadge.text = "Video CNN: Clear [${inferenceMs.toInt()}ms]"
                             cnnBadge.setTextColor(Color.rgb(147, 197, 253))
                         }
+                        refreshHud()
                     }
                 }
 
@@ -698,7 +703,11 @@ class MainActivity : ComponentActivity() {
         lastGatewayAt = 0
         lastHudAt = 0
         lastGunAt = 0
+        lastGunConfidence = 0.0f
         lastAudioAt = 0
+        audioAlert = false
+        audioClass = ""
+        audioConfidence = 0.0f
         hudThreats.clear()
         generation.incrementAndGet()
         cancelPendingCameraLayout()
