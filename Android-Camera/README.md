@@ -109,3 +109,13 @@ then stop the app and verify that the feed becomes inactive.
 ## Version 0.3.0 camera HUD
 
 The camera preview now overlays actual battery/network status and short Smoke, Fire, Medical and Shooting alarm states from the paired node. The same status appears on the web CCTV feeds. Unknown or stale values are shown as unavailable. Android gun detections and laptop inference create web incidents; they do not control ESP32 LEDs. The ESP32 reports its physical buttons and MQ-2 smoke events to the website using the original pairing and alert API. Direct camera viewing also works while laptop inference is unavailable.
+
+## Version 0.3.1 status freshness fix
+
+The phone shows **Node status unavailable** when video uploads succeed but the
+paired node's threat status is stale, missing, or incomplete. **No active alerts
+reported** requires a current, complete status response. Fresh local video and
+audio threats remain visible while the gateway status is unavailable.
+
+The shared camera viewport and image cropping from 0.2.1 remain in place.
+Pairing codes, connection endpoints, and session authentication are unchanged.

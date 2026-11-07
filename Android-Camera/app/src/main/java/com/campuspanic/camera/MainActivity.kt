@@ -287,13 +287,13 @@ class MainActivity : ComponentActivity() {
         hudBottom.text = values.entries.joinToString("   ") { (name, value) -> "$name ${when (value) { true -> "On"; false -> "Off"; null -> "—" }}" }
         val active = values.filterValues { it == true }.keys
         val alarm = active.isNotEmpty() || audioFresh
-        alertBanner.text = when {
-            !running -> "NOT STREAMING"
-            active.isNotEmpty() -> active.joinToString(" / ").uppercase() + " ALERT"
-            audioFresh -> "AUDIO ALERT"
-            !connected -> "CONNECTING TO CAMPUS CCTV"
-            else -> "NO ACTIVE ALERTS REPORTED"
-        }
+        alertBanner.text = CameraHudStatus.banner(
+            streaming = running,
+            connected = connected,
+            freshStatus = fresh && values.values.none { it == null },
+            activeThreats = active,
+            audioAlert = audioFresh
+        )
         alertBanner.setBackgroundColor(if (alarm) Color.rgb(185, 28, 28) else Color.argb(80, 8, 47, 73))
         alertBanner.setTextColor(if (alarm) Color.WHITE else Color.rgb(186, 230, 253))
         if (alarm && !hudAlarm) triggerThreatFeedback()
