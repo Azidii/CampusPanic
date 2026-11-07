@@ -43,6 +43,33 @@ router.post('/clear-resolved', requireAuth, incidentWrite(async (req, res) => {
   res.json({ success: true, cleared: result.modifiedCount });
 }));
 
+router.get('/resolved-reset-preview', requireAuth, requireAdmin, async (req, res, next) => {
+  try {
+    const scope = { ...buildingFilter(req.query.building), status: 'resolved' };
+    const preview = await resetPreview(scope);
+    const confirmationToken = jwt.sign({ ...preview, scope, purpose: 'resolved-reset', sub: String(req.user._id) }, config.jwtSecret, { expiresIn: '5m' });
+    res.set('Cache-Control', 'no-store').json({ success: true, count: preview.count, confirmationToken });
+  } catch (error) { next(error); }
+});
+
+router.delete('/resolved', requireAuth, requireAdmin, async (req, res, next) => {
+  if (req.get('X-CampusPanic-Action') !== 'reset-resolved' || req.body.confirmation !== 'DELETE RESOLVED') {
+    return res.status(400).json({ success: false, message: 'Explicit resolved history deletion confirmation required.' });
+  }
+  let expected;
+  try {
+    expected = jwt.verify(req.body.confirmationToken, config.jwtSecret);
+    if (expected.purpose !== 'resolved-reset' || expected.sub !== String(req.user._id)) throw new Error();
+  } catch { return res.status(400).json({ success: false, message: 'Confirmation expired or invalid. Review the resolved count again.' }); }
+  try {
+    const result = await deleteAllAlerts(expected, undefined, expected.scope);
+    const success = result.remaining === 0 && result.reconciled && !result.failures.length;
+    res.status(success ? 200 : 207).json({ success, ...result, message: success
+      ? 'Resolved history reset. Detection totals updated; open incidents kept.'
+      : 'Reset partially completed. Some records were retained; review the count and retry.' });
+  } catch (error) { next(error); }
+});
+
 router.get('/reset-preview', requireAuth, requireAdmin, async (req, res, next) => {
   try {
     const preview = await resetPreview();

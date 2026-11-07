@@ -19,8 +19,8 @@ document.addEventListener('DOMContentLoaded', () => {
   for (const [id, delta] of [['historyPrevious',-1],['historyNext',1]]) byId(id).addEventListener('click', () => {
     const url = new URL(location.href); url.searchParams.set('historyPage', feed.historyPage + delta); history.replaceState(null, '', url); window.refreshCampus();
   });
-  async function action(url, method, body) {
-    const response = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  async function action(url, method, body, headers = {}) {
+    const response = await fetch(url, { method, headers: {'Content-Type':'application/json', ...headers}, body: JSON.stringify(body) });
     const data = await response.json(); if (!response.ok || !data.success) throw new Error(data.message || 'Request failed');
     await window.refreshCampus(); return data;
   }
@@ -29,6 +29,20 @@ document.addEventListener('DOMContentLoaded', () => {
     try { const result = await action('/api/alerts/clear-resolved', 'POST', {building:window.selectedBuilding()}); window.showToast(result.cleared + ' resolved incidents cleared for your account.', 'success'); }
     catch (error) { window.showToast(error.message, 'error'); }
     finally { event.target.disabled = false; }
+  });
+  byId('resetResolved')?.addEventListener('click', async event => {
+    const button = event.currentTarget; button.disabled = true;
+    try {
+      const building = window.selectedBuilding();
+      const response = await fetch('/api/alerts/resolved-reset-preview?' + new URLSearchParams({building}), {cache:'no-store'});
+      const preview = await response.json();
+      if (!response.ok || !preview.success) throw new Error(preview.message || 'Cannot load resolved count.');
+      if (!preview.count) { window.showToast('No resolved incidents to reset in this building selection.', 'info'); return; }
+      if (!window.confirm('Permanently delete ' + preview.count + ' resolved incidents and their snapshots in ' + (building === 'all' ? 'all buildings' : building) + ' for everyone? This includes cleared history and updates the detection totals. Open incidents will remain. This cannot be undone.')) return;
+      await action('/api/alerts/resolved', 'DELETE', {confirmationToken:preview.confirmationToken, confirmation:'DELETE RESOLVED'}, {'X-CampusPanic-Action':'reset-resolved'});
+      window.showToast('Resolved history reset. Detection totals updated.', 'success');
+    } catch (error) { window.showToast(error.message, 'error'); await window.refreshCampus().catch(() => {}); }
+    finally { button.disabled = false; }
   });
   document.addEventListener('click', async event => {
     const button = event.target.closest('.alert-action-trigger'); if (!button) return;

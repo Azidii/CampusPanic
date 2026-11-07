@@ -127,6 +127,46 @@ test('dashboard isolation, building filters, unique node names and guarded alert
       const fresh=await recordVisionThreat(nodeId,[{label:'gun',confidence:.9,box:[0,0,10,10]}]);assert.ok(fresh);assert.notEqual(String(first._id),String(fresh._id));
       await deleteAllAlerts(await resetPreview());
     });
+    await t.test('resolved reset is admin-only, count-bound and building-scoped; open incidents survive',async()=>{
+      assert.match(await (await request('/')).text(), /id="resetResolved"/);
+      assert.doesNotMatch(await (await request('/',{user:'alice'})).text(), /id="resetResolved"/);
+      const resolved=await Alert.create(packet(800,{status:'resolved',clearedBy:[users.alice._id]}));
+      const open=await Alert.create(packet(801));
+      const other=await Alert.create(packet(802,{status:'resolved',building:'RG Birrey'}));
+      for(const user of [null,'alice']) {
+        assert.equal((await request('/api/alerts/resolved-reset-preview',{user})).status,user?403:401);
+        assert.equal((await request('/api/alerts/resolved',{user,method:'DELETE',body:{}})).status,user?403:401);
+      }
+      assert.equal((await request('/api/alerts/resolved-reset-preview?building=Other')).status,400);
+      let preview=await (await request('/api/alerts/resolved-reset-preview?building=RSY')).json();
+      assert.equal(preview.count,1);
+      const reset=(headers={})=>request('/api/alerts/resolved',{method:'DELETE',headers:{'X-CampusPanic-Action':'reset-resolved',...headers},body:{confirmation:'DELETE RESOLVED',confirmationToken:preview.confirmationToken}});
+      assert.equal((await reset({Origin:'https://hostile.example'})).status,403);
+      assert.equal((await request('/api/alerts/resolved',{method:'DELETE',body:{}})).status,400);
+      const changed=await Alert.create(packet(803,{status:'resolved'}));
+      assert.equal((await reset()).status,409);
+      preview=await (await request('/api/alerts/resolved-reset-preview?building=RSY')).json();
+      const result=await reset();assert.equal(result.status,200);assert.equal((await result.json()).deleted,2);
+      assert.equal(await Alert.findById(resolved._id),null);assert.equal(await Alert.findById(changed._id),null);
+      assert.ok(await Alert.findById(open._id));assert.ok(await Alert.findById(other._id));
+      const current=await feed('alice','&building=RSY');assert.equal(current.counts.fire,1);assert.equal(current.historyTotal,0);assert.equal(current.alerts.length,1);
+      await deleteAllAlerts(await resetPreview());
+    });
+    await t.test('resetting all resolved detections returns the three dashboard counters to zero',async()=>{
+      for(const [index,emergencyType] of ['gunshot','medical','fire'].entries()) {
+        await Alert.create(packet(900+index,{emergencyType,status:'resolved'}));
+      }
+      const before=await feed();
+      assert.deepEqual(['gunshot','medical','fire'].map(type=>before.counts[type]),[1,1,1]);
+      const preview=await (await request('/api/alerts/resolved-reset-preview?building=all')).json();
+      const response=await request('/api/alerts/resolved',{method:'DELETE',headers:{'X-CampusPanic-Action':'reset-resolved'},body:{confirmation:'DELETE RESOLVED',confirmationToken:preview.confirmationToken}});
+      assert.equal(response.status,200);
+      const after=await feed('alice','&showCleared=true');
+      assert.deepEqual(['gunshot','medical','fire'].map(type=>after.counts[type]),[0,0,0]);
+      assert.equal(after.historyTotal,0);
+      const html=await (await request('/')).text();
+      for(const type of ['gunshot','medical','fire']) assert.ok(html.includes('id="count-'+type+'">0</span>'));
+    });
     await t.test('several visible tabs do not exhaust the shared mutation rate limit',async()=>{
       for(let batch=0;batch<55;batch++) {
         const responses=await Promise.all(Array.from({length:20},()=>request('/api/live')));
@@ -139,3 +179,4 @@ test('dashboard isolation, building filters, unique node names and guarded alert
     await mongoose.disconnect();await memory.stop();
   }
 });
+
