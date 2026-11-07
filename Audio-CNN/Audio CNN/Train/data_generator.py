@@ -14,7 +14,33 @@ train_dir = Path(__file__).resolve().parent
 if str(train_dir) not in sys.path:
     sys.path.insert(0, str(train_dir))
 
-from clean import preprocess_audio
+from clean import preprocess_audio, normalize_audio
+
+def augment_audio(audio: np.ndarray, target_sr: int = 16000) -> np.ndarray:
+    """
+    Applies audio data augmentation:
+    - Random gain variation (0.7x to 1.3x)
+    - Subtle Gaussian background noise
+    - Small cyclic time shift (+/- 50ms)
+    """
+    if len(audio) == 0:
+        return audio
+        
+    # 1. Random gain
+    gain = np.random.uniform(0.7, 1.3)
+    audio = audio * gain
+    
+    # 2. Random cyclic time roll (-50ms to +50ms)
+    max_roll = int(target_sr * 0.05)
+    if max_roll > 0:
+        roll = np.random.randint(-max_roll, max_roll)
+        audio = np.roll(audio, roll)
+    
+    # 3. Light Gaussian noise injection
+    noise_amp = 0.005 * np.random.uniform() * (np.max(np.abs(audio)) + 1e-6)
+    audio = audio + noise_amp * np.random.normal(size=audio.shape).astype(np.float32)
+    
+    return audio
 
 def extract_mel_spectrogram(audio_signal, rate=16000, n_mels=128):
     signal_tensor = tf.convert_to_tensor(audio_signal, dtype=tf.float32)
@@ -36,7 +62,7 @@ def extract_mel_spectrogram(audio_signal, rate=16000, n_mels=128):
 
 class AudioDataGenerator(Sequence):
     def __init__(self, file_paths, labels, num_classes=3, batch_size=32,
-                 sr=16000, duration=1.0, shuffle=True):
+                 sr=16000, duration=1.0, shuffle=True, augment=False):
         self.file_paths = np.array(file_paths)
         self.labels = np.array(labels)
         self.num_classes = num_classes
@@ -44,6 +70,7 @@ class AudioDataGenerator(Sequence):
         self.sr = sr
         self.duration = duration
         self.shuffle = shuffle
+        self.augment = augment
         self.indexes = np.arange(len(self.file_paths))
         self.on_epoch_end()
         
@@ -58,6 +85,8 @@ class AudioDataGenerator(Sequence):
         X_batch = []
         for path in batch_paths:
             audio = preprocess_audio(path, target_sr=self.sr, duration=self.duration)
+            if self.augment:
+                audio = augment_audio(audio, target_sr=self.sr)
             spec = extract_mel_spectrogram(audio, rate=self.sr)
             X_batch.append(spec)
             

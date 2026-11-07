@@ -28,13 +28,13 @@ from clean import preprocess_audio
 from data_generator import extract_mel_spectrogram
 from models import get_conv2d_model
 
-def load_or_extract_features(df, cache_file, target_sr=16000, duration=1.0):
-    if cache_file.exists():
+def load_or_extract_features(df, cache_file, target_sr=16000, duration=1.0, recompute=False):
+    if cache_file.exists() and not recompute:
         print(f"Loading precomputed features from: {cache_file}")
         data = np.load(cache_file, allow_pickle=True)
         return data['X'], data['y'], data['classes']
         
-    print(f"Extracting features for {len(df)} files...")
+    print(f"Extracting normalized features for {len(df)} files...")
     X = []
     y_raw = df['label'].values
     
@@ -111,9 +111,10 @@ def plot_confusion_matrix(cm, classes, output_path):
 
 def main():
     parser = argparse.ArgumentParser(description="Train Audio CNN Model")
-    parser.add_argument('--epochs', type=int, default=25, help='Number of training epochs')
+    parser.add_argument('--epochs', type=int, default=30, help='Number of training epochs')
     parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
     parser.add_argument('--test_size', type=float, default=0.2, help='Validation split fraction')
+    parser.add_argument('--recompute_cache', action='store_true', help='Force re-extraction of normalized audio features')
     args = parser.parse_args()
     
     # Path setup
@@ -137,7 +138,7 @@ def main():
     print(df['label'].value_counts())
     
     # 1. Feature Extraction / Loading
-    X, y, classes = load_or_extract_features(df, cache_file)
+    X, y, classes = load_or_extract_features(df, cache_file, recompute=args.recompute_cache)
     num_classes = len(classes)
     
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -169,21 +170,21 @@ def main():
     callbacks = [
         ModelCheckpoint(
             filepath=str(model_save_path),
-            monitor='val_accuracy',
-            mode='max',
+            monitor='val_loss',
+            mode='min',
             save_best_only=True,
             verbose=1
         ),
         EarlyStopping(
             monitor='val_loss',
-            patience=7,
+            patience=10,
             restore_best_weights=True,
             verbose=1
         ),
         ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
-            patience=3,
+            patience=4,
             verbose=1
         ),
         CSVLogger(

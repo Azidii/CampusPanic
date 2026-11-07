@@ -11,7 +11,7 @@ import pandas as pd
 from pathlib import Path
 from scipy.signal import resample
 
-def envelope(y, rate, threshold=0.005):
+def envelope(y, rate, threshold=0.02):
     """
     Computes signal envelope using a rolling maximum filter
     to identify active acoustic regions and eliminate silence.
@@ -21,6 +21,19 @@ def envelope(y, rate, threshold=0.005):
     y_env = s.rolling(window=window_size, min_periods=1, center=True).max().to_numpy()
     mask = y_env > threshold
     return mask, y_env
+
+def normalize_audio(audio: np.ndarray, target_peak: float = 0.95, min_noise_floor: float = 0.02) -> np.ndarray:
+    """
+    Peak-normalizes the audio waveform to `target_peak` if it exceeds `min_noise_floor`.
+    Prevents the CNN from relying on raw recording volume to detect gunshots.
+    Avoids scaling up low-level ambient room hiss or silence.
+    """
+    if len(audio) == 0:
+        return audio
+    max_peak = float(np.max(np.abs(audio)))
+    if max_peak >= min_noise_floor:
+        return (audio / max_peak) * target_peak
+    return audio
 
 def read_audio_file(file_path):
     """
@@ -50,13 +63,14 @@ def read_audio_file(file_path):
             
     return data, sr
 
-def preprocess_audio(file_path, target_sr=16000, duration=1.0, clean_silence=True, threshold=0.005):
+def preprocess_audio(file_path, target_sr=16000, duration=1.0, clean_silence=True, threshold=0.02, normalize=True):
     """
     Full preprocessing pipeline:
     1. Read and convert to mono.
     2. Resample to target_sr (16 kHz).
     3. (Optional) Filter dead silence using signal envelope.
     4. Truncate or pad to exact fixed length (duration * target_sr).
+    5. Peak-normalize active audio to standardize energy across classes.
     """
     audio, sr = read_audio_file(file_path)
     
@@ -81,5 +95,9 @@ def preprocess_audio(file_path, target_sr=16000, duration=1.0, clean_silence=Tru
     elif len(audio) < required_samples:
         pad_width = required_samples - len(audio)
         audio = np.pad(audio, (0, pad_width), mode='constant')
+        
+    # Peak normalization to prevent loud noise from falsely triggering gunshot alerts
+    if normalize:
+        audio = normalize_audio(audio, target_peak=0.95, min_noise_floor=threshold)
         
     return audio

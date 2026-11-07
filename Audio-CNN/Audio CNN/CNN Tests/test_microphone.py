@@ -25,13 +25,14 @@ from model_runners import (
 
 
 def run_microphone_test(duration: float = 2.0, model_choice: str = "all",
-                        save_name: str = None, clean_silence: bool = True):
+                        save_name: str = None, clean_silence: bool = True,
+                        threshold: float = 0.70):
     if not SOUNDDEVICE_AVAILABLE:
         print("\n[!] Error: 'sounddevice' package is not installed.")
         print("    Install it via: pip install sounddevice\n")
         return
 
-    tester = UnifiedModelTester()
+    tester = UnifiedModelTester(confidence_threshold=threshold)
 
     # Pre-warm models so recording latency isn't skewed by model initialization
     print("\nInitializing and loading models...")
@@ -82,7 +83,12 @@ def _print_single_result(model_name: str, file_name: str, res: dict, classes: li
     print("=" * 55)
     print(f"Audio Source : {file_name}")
     print(f"Model File   : {res['model_file']} ({res['size_mb']:.1f} MB)")
-    print(f"Prediction   : {res['predicted_label']} ({res['confidence'] * 100:.2f}%)")
+    is_conf = res.get("is_confident", True)
+    thresh_pct = res.get("confidence_threshold", 0.70) * 100
+    pred_text = res['predicted_label'] if is_conf else f"{res['predicted_label']} (Uncertain / < {thresh_pct:.0f}%)"
+    print(f"Prediction   : {pred_text} ({res['confidence'] * 100:.2f}%)")
+    alert_text = "YES [!]" if res.get("alert", False) else "NO [-]"
+    print(f"Threat Alert : {alert_text}")
     print(f"Latency      : {res['latency_ms']:.2f} ms")
     print("-" * 55)
     print("Class Probabilities:")
@@ -106,6 +112,10 @@ def main():
     parser.add_argument(
         "--model", type=str, choices=["all", "best", "tflite", "tinyml"], default="all",
         help="Model to test: 'all' (default), 'best', 'tflite', or 'tinyml'"
+    )
+    parser.add_argument(
+        "--threshold", type=float, default=0.70,
+        help="Minimum confidence threshold to verify threat alerts (default: 0.70)"
     )
     parser.add_argument(
         "--save_name", type=str, default=None,
@@ -132,7 +142,8 @@ def main():
                     duration=args.duration,
                     model_choice=args.model,
                     save_name=args.save_name,
-                    clean_silence=clean_silence
+                    clean_silence=clean_silence,
+                    threshold=args.threshold
                 )
                 user_input = input("Press [Enter] to record again, or type 'q' to quit: ").strip().lower()
                 if user_input == 'q':
@@ -146,7 +157,8 @@ def main():
             duration=args.duration,
             model_choice=args.model,
             save_name=args.save_name,
-            clean_silence=clean_silence
+            clean_silence=clean_silence,
+            threshold=args.threshold
         )
 
 

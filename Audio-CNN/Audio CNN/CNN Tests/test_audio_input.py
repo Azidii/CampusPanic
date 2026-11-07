@@ -154,7 +154,12 @@ def _print_single_result(model_name: str, file_name: str, res: dict, classes: li
     print("=" * 55)
     print(f"Audio File   : {file_name}")
     print(f"Model File   : {res['model_file']} ({res['size_mb']:.1f} MB)")
-    print(f"Prediction   : {res['predicted_label']} ({res['confidence'] * 100:.2f}%)")
+    is_conf = res.get("is_confident", True)
+    thresh_pct = res.get("confidence_threshold", 0.70) * 100
+    pred_text = res['predicted_label'] if is_conf else f"{res['predicted_label']} (Uncertain / < {thresh_pct:.0f}%)"
+    print(f"Prediction   : {pred_text} ({res['confidence'] * 100:.2f}%)")
+    alert_text = "YES [!]" if res.get("alert", False) else "NO [-]"
+    print(f"Threat Alert : {alert_text}")
     print(f"Latency      : {res['latency_ms']:.2f} ms")
     print("-" * 55)
     print("Class Probabilities:")
@@ -224,6 +229,10 @@ def main():
         help="Model to test: 'all' (default), 'best', 'tflite', or 'tinyml'"
     )
     parser.add_argument(
+        "--threshold", type=float, default=0.70,
+        help="Minimum confidence threshold to verify threat alerts (default: 0.70)"
+    )
+    parser.add_argument(
         "--export-csv", action="store_true",
         help="Export batch evaluation results to Audio CNN/Results/audio_input_batch_results.csv"
     )
@@ -236,14 +245,14 @@ def main():
     clean_silence = not args.no_silence_clean
 
     if args.file:
-        tester = UnifiedModelTester()
+        tester = UnifiedModelTester(confidence_threshold=args.threshold)
         test_single_file(Path(args.file), tester, model_choice=args.model, clean_silence=clean_silence)
     elif args.all:
         files = get_audio_input_files()
         if not files:
             print(f"[!] No audio files found in '{AUDIO_INPUT_DIR}'")
             return
-        tester = UnifiedModelTester()
+        tester = UnifiedModelTester(confidence_threshold=args.threshold)
         test_all_files_batch(files, tester, export_csv=args.export_csv, clean_silence=clean_silence)
     else:
         # Launch interactive menu
